@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trivia Fridays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="bulbs" aria-hidden="true"></div>
+
+<header class="masthead">
+  <p class="eyebrow">Every Friday · winner takes nothing</p>
+  <h1 class="wordmark"><span>Trivia</span><span>Fridays</span></h1>
+  <p class="tagline" id="tagline">Loading the scoreboard…</p>
+</header>
+
+<!-- ================= SIGN IN ================= -->
+<section id="view-auth" class="view card-stage" hidden>
+  <div class="marquee-card">
+    <h2 class="card-title">Who are you?</h2>
+
+    <label class="field">
+      <span>Your name</span>
+      <select id="name-select">
+        <option value="">Pick from the roster…</option>
+      </select>
+    </label>
+
+    <div id="pin-block" hidden>
+      <p class="hint" id="pin-hint"></p>
+      <label class="field">
+        <span>PIN</span>
+        <input id="pin" type="password" inputmode="numeric" autocomplete="off"
+               maxlength="6" placeholder="6 digits">
+      </label>
+      <label class="field" id="pin2-field" hidden>
+        <span>PIN again</span>
+        <input id="pin2" type="password" inputmode="numeric" autocomplete="off"
+               maxlength="6" placeholder="6 digits">
+      </label>
+      <button id="auth-go" class="btn btn-primary">Let me in</button>
+    </div>
+
+    <p class="error" id="auth-error" hidden></p>
+    <p class="footnote">Not on the list? Ask Ben to add you.</p>
+  </div>
+</section>
+
+<!-- ================= LEADERBOARD ================= -->
+<section id="view-board" class="view" hidden>
+
+  <div class="whoami">
+    <span id="whoami-name"></span>
+    <button id="sign-out" class="btn btn-ghost">Sign out</button>
+  </div>
+
+  <div class="podium" id="podium"></div>
+
+  <ol class="rankings" id="rankings"></ol>
+
+  <div class="spoon" id="spoon" hidden></div>
+
+  <p class="rule">Ranked on total points across the season. Show up, score up.</p>
+</section>
+
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
