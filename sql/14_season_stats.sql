@@ -41,7 +41,7 @@ create policy howler_vote_read_own on howler_votes for select using (player_id =
 -- Host (or admin) nominates a free-text answer from a closed week.
 create or replace function nominate_howler(p_response_id uuid)
 returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public as $nominate_howler$
 declare
   v_week uuid;
   v_type text;
@@ -62,11 +62,11 @@ begin
   values (p_response_id)
   on conflict (response_id) do nothing;
 end;
-$$;
+$nominate_howler$;
 
 create or replace function retract_howler(p_nomination_id uuid)
 returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public as $retract_howler$
 declare v_week uuid;
 begin
   select q.week_id into v_week
@@ -80,12 +80,12 @@ begin
 
   delete from howler_nominations where id = p_nomination_id;
 end;
-$$;
+$retract_howler$;
 
 -- One vote per player per season, movable any time.
 create or replace function vote_howler(p_nomination_id uuid)
 returns void
-language plpgsql security definer set search_path = public as $$
+language plpgsql security definer set search_path = public as $vote_howler$
 declare v_me uuid := me();
 begin
   if v_me is null then raise exception 'Not signed in.'; end if;
@@ -98,7 +98,7 @@ begin
   on conflict (player_id) do update
     set nomination_id = excluded.nomination_id, created_at = now();
 end;
-$$;
+$vote_howler$;
 
 -- The ballot: candidates, counts, and whether the caller's own
 -- vote sits on each. Never exposes who else voted for what.
@@ -112,7 +112,7 @@ returns table (
   votes         bigint,
   mine          boolean
 )
-language sql stable security definer set search_path = public as $$
+language sql stable security definer set search_path = public as $howler_board$
   select
     n.id,
     q.prompt,
@@ -129,7 +129,7 @@ language sql stable security definer set search_path = public as $$
   left join howler_votes v on v.nomination_id = n.id
   group by n.id, q.prompt, r.answer_raw, p.display_name, w.quiz_date
   order by count(v.player_id) desc, min(n.created_at)
-$$;
+$howler_board$;
 
 -- ============================================================
 -- SEASON BADGES - deliberately generous: with a normal office
@@ -143,7 +143,7 @@ returns table (
   badge_name   text,
   detail       text
 )
-language sql stable security definer set search_path = public as $$
+language sql stable security definer set search_path = public as $season_badges$
 with closed_weeks as (
   select id, quiz_date, topic,
          row_number() over (order by quiz_date) as week_no
@@ -287,7 +287,7 @@ join closed_weeks cw on cw.id = w.week_id
 join topic_suggestions ts on ts.player_id = w.player_id
   and ts.used and ts.topic = cw.topic
 join players p on p.id = w.player_id
-$$;
+$season_badges$;
 
 -- ============================================================
 -- SEASON RECORDS - the Halls of Fame and Shame.
@@ -302,7 +302,7 @@ returns table (
   value        text,
   hall         text
 )
-language sql stable security definer set search_path = public as $$
+language sql stable security definer set search_path = public as $season_records$
 with closed_weeks as (
   select id, quiz_date,
          row_number() over (order by quiz_date) as week_no
@@ -361,7 +361,7 @@ union all
 (select 'lowest_night', 'Lowest single night', display_name,
         round(points, 1) || ' pts · ' || to_char(quiz_date, 'DD Mon'), 'shame'
  from placed order by points asc, display_name limit 1)
-$$;
+$season_records$;
 
 -- ============================================================
 -- GRANTS - reads for anyone signed in; the write functions
