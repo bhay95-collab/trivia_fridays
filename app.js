@@ -138,6 +138,15 @@ async function showBoard() {
   const meRow = rows.find((r) => slugify(r.display_name) === meSlug);
   $("whoami-name").textContent = meRow ? meRow.display_name : "Signed in";
 
+  if (user) {
+    const { data: me } = await db
+      .from("players")
+      .select("is_admin")
+      .eq("auth_id", user.id)
+      .maybeSingle();
+    $("admin-link").hidden = !me?.is_admin;
+  }
+
   const ranked = withRanks(rows);
   renderPodium(ranked.slice(0, 3));
   renderRest(ranked.slice(3), meSlug);

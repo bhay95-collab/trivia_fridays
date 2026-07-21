@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trivia Fridays — Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="bulbs" aria-hidden="true"></div>
+
+<header class="masthead masthead-admin">
+  <p class="eyebrow">Trivia Fridays</p>
+  <h1 class="wordmark wordmark-sm"><span>Admin</span></h1>
+  <p class="tagline" id="tagline">Checking who you are…</p>
+</header>
+
+<!-- ================= LOCKED ================= -->
+<section id="view-locked" class="view card-stage" hidden>
+  <div class="marquee-card">
+    <h2 class="card-title">Not so fast</h2>
+    <p class="hint" id="locked-message">This page is for admins only.</p>
+    <a class="btn btn-ghost" href="index.html">Back to the leaderboard</a>
+  </div>
+</section>
+
+<!-- ================= ADMIN ================= -->
+<section id="view-admin" class="view admin-view" hidden>
+
+  <div class="whoami">
+    <span id="whoami-name"></span>
+    <a class="btn btn-ghost" href="index.html">Back to leaderboard</a>
+  </div>
+
+  <!-- ---------- People ---------- -->
+  <section class="admin-panel">
+    <h2 class="panel-title">People</h2>
+
+    <form id="add-player-form" class="inline-form">
+      <label class="field">
+        <span>Full name</span>
+        <input id="new-player-name" type="text" placeholder="e.g. Emma O'Ryan" autocomplete="off">
+      </label>
+      <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+    <p class="error" id="people-error" hidden></p>
+
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>PIN</th>
+            <th>Points</th>
+            <th>Nights</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="people-rows">
+          <tr><td colspan="5" class="table-empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ---------- Quiz nights ---------- -->
+  <section class="admin-panel">
+    <h2 class="panel-title">Quiz nights</h2>
+
+    <form id="add-week-form" class="inline-form inline-form-wide">
+      <label class="field">
+        <span>Date</span>
+        <input id="new-week-date" type="date">
+      </label>
+      <label class="field">
+        <span>Title (optional)</span>
+        <input id="new-week-title" type="text" placeholder="e.g. 90s movies" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Host</span>
+        <select id="new-week-host">
+          <option value="">No host yet</option>
+        </select>
+      </label>
+      <button type="submit" class="btn btn-primary">Create</button>
+    </form>
+    <p class="error" id="weeks-error" hidden></p>
+
+    <div class="table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Title</th>
+            <th>Host</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="weeks-rows">
+          <tr><td colspan="5" class="table-empty">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</section>
+
+<script type="module" src="admin.js"></script>
+</body>
+</html>

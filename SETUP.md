@@ -32,11 +32,16 @@ Follow in order. Roughly 30 minutes.
 - **SQL Editor** → **New query**
 - Open `sql/02_seed.sql`, copy the whole file, paste, **Run**
 
-**1.6 Check it worked.**
+**1.6 Add the admin functions.**
+- **SQL Editor** → **New query**
+- Open `sql/04_admin_functions.sql`, copy the whole file, paste, **Run**
+- This gives the admin page a safe way to add people, reset PINs, and manage quiz nights. It is safe to re-run any time you update it.
+
+**1.7 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 21 people. Benjamin Hay on top with 54.
 
-**1.7 Grab your two keys.**
+**1.8 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 
@@ -66,7 +71,7 @@ Follow in order. Roughly 30 minutes.
 
 **3.3 Upload the files.**
 - On the empty repo page, click **uploading an existing file**
-- Drag in: `index.html`, `app.js`, `styles.css`, `config.js`
+- Drag in: `index.html`, `app.js`, `styles.css`, `config.js`, `admin.html`, `admin.js`
 - Then drag the whole `sql` folder in too (harmless, and it keeps everything together)
 - Click **Commit changes**
 
@@ -83,26 +88,34 @@ Follow in order. Roughly 30 minutes.
 
 ## Part 4 — Day to day
 
+Everything below is done from the admin page, not raw SQL. Open your site,
+sign in, and click **Admin** at the bottom of the leaderboard (only visible
+to admins). Or go straight to `https://YOURNAME.github.io/trivia-fridays/admin.html`.
+
 **Adding a new starter**
-SQL Editor → New query:
-```sql
-insert into players (slug, display_name)
-values ('jane.smith', 'Jane Smith');
-```
-The slug is the name in lower case with dots instead of spaces, no apostrophes.
+Admin page → **People** → type their full name → **Add**.
+The login handle (slug) is generated for you — you never type it.
+They pick their name from the roster on the sign-in page and set their own PIN.
 
 **Someone forgot their PIN**
-```sql
--- 1. unlink their account
-update players set auth_id = null where slug = 'jane.smith';
--- 2. Authentication > Users > find jane.smith@triviafridays.local > Delete user
-```
-They then set a fresh PIN next visit.
+Admin page → **People** → find them → **Reset PIN** → confirm.
+Their scores are untouched. They set a fresh PIN next time they sign in.
 
 **Making someone else an admin (your backup while you are away)**
-```sql
-update players set is_admin = true where slug = 'jane.smith';
-```
+Admin page → **People** → find them → **Make admin**.
+You can't remove your own admin rights, and the last remaining admin can't be
+removed either — so there's always someone who can get back in.
+
+**Someone left**
+Admin page → **People** → find them → **Deactivate**.
+They disappear from the sign-in list and the leaderboard, but their past
+scores are kept. **Reactivate** brings them back.
+
+**Adding a quiz night**
+Admin page → **Quiz nights** → pick a date, optional title, host → **Create**.
+Change the host any time by picking a new one from the dropdown in the table
+— it saves as soon as you pick. **Delete** removes a night that was created
+by mistake; once a night is closed it can no longer be deleted.
 
 **Making changes to the site**
 Edit the file on GitHub (click the file → pencil icon → Commit), or re-upload it.
