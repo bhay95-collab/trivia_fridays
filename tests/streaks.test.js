@@ -6,7 +6,8 @@ import {
   bestStreak,
   streakLine,
   streakBreakLine,
-  spoonRoast,
+  ROASTS,
+  randomRoast,
 } from '../streaks.js';
 
 test('splits verdicts into runs of correct and everything else', () => {
@@ -55,22 +56,22 @@ test('mentions the question that broke the streak', () => {
   assert.match(line, /Q7/);
 });
 
-test('rotates the spoon roast week by week and never repeats consecutively', () => {
-  const roasts = Array.from({ length: 12 }, (_, week) => spoonRoast(week));
-  for (let i = 1; i < roasts.length; i++) {
-    assert.notEqual(roasts[i], roasts[i - 1], `same roast two weeks running at week ${i}`);
+test('offers a big set of roasts so the plaque keeps changing', () => {
+  assert.ok(ROASTS.length >= 20, `only ${ROASTS.length} roasts - want a big range`);
+  assert.equal(new Set(ROASTS).size, ROASTS.length, 'roasts should be unique');
+});
+
+test('randomRoast always returns one of the roasts', () => {
+  for (let i = 0; i < 200; i++) {
+    assert.ok(ROASTS.includes(randomRoast()), 'randomRoast returned something off-list');
   }
 });
 
-test('spoon roast is deterministic for a given week', () => {
-  assert.equal(spoonRoast(5), spoonRoast(5));
-});
-
 test('spoon roasts stay about trivia, not the person', () => {
-  // no roast should reference anything but quiz performance - spot-check
-  // the vocabulary for words that would land badly on a Monday
+  // no roast should reference anything but quiz performance - the whole
+  // set is checked for vocabulary that would land badly on a Monday
   const banned = /\b(stupid|dumb|idiot|loser|ugly|fat|lazy)\b/i;
-  for (let week = 0; week < 12; week++) {
-    assert.doesNotMatch(spoonRoast(week), banned);
+  for (const roast of ROASTS) {
+    assert.doesNotMatch(roast, banned);
   }
 });

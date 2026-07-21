@@ -19,11 +19,15 @@ boot();
 
 async function boot() {
   const { data: { session } } = await db.auth.getSession();
-  if (session) return showBoard();
+  if (session) return showBoard(session);
   await loadRoster();
   show("view-auth");
   $("tagline").textContent = "Sign in to see where you sit.";
 }
+
+// The shape season.js hands back, used to render the standings
+// immediately before the (heavier) season RPCs have returned.
+const EMPTY_SEASON = { byPlayer: new Map(), groups: [], records: [], howlers: [] };
 
 // If the browser restores this page from back/forward cache after
 // signing in elsewhere, re-check instead of showing a stale sign-in
@@ -129,19 +133,33 @@ $("sign-out").addEventListener("click", async () => {
 /* ============================================================
    LEADERBOARD
    ============================================================ */
-async function showBoard() {
+async function showBoard(session) {
   show("view-board");
   $("tagline").textContent = "Season standings";
 
-  const { data: { user } } = await db.auth.getUser();
+  // Reuse the session boot() already fetched instead of a second
+  // getUser() round trip.
+  const user = session?.user ?? (await db.auth.getUser()).data.user;
   const meSlug = user ? user.email.split("@")[0] : null;
 
-  const { data: rows, error } = await db
+  // Fire every independent request at once. The standings come from a
+  // single fast view; the season layer is three heavier RPCs, so we
+  // don't let it block the board from painting.
+  const standingsReq = db
     .from("leaderboard")
     .select("*")
     .order("total_points", { ascending: false })
     .order("display_name");
+  const meReq = user
+    ? db.from("players").select("id, is_admin").eq("auth_id", user.id).eq("is_active", true).maybeSingle()
+    : Promise.resolve({ data: null });
+  // fails soft: a missing RPC hides its panel, never breaks the board
+  const seasonReq = fetchSeason(db).catch((e) => {
+    console.error("Season stats unavailable:", e);
+    return EMPTY_SEASON;
+  });
 
+  const { data: rows, error } = await standingsReq;
   if (error) {
     $("rankings").innerHTML = `<li class="name">Scoreboard is not loading. Check the database setup.</li>`;
     return;
@@ -150,44 +168,35 @@ async function showBoard() {
   const meRow = rows.find((r) => slugify(r.display_name) === meSlug);
   $("whoami-name").textContent = meRow ? meRow.display_name : "Signed in";
 
-  if (user) {
-    const { data: me } = await db
-      .from("players")
-      .select("id, is_admin")
-      .eq("auth_id", user.id)
-      .eq("is_active", true)
-      .maybeSingle();
-    if (!me) {
-      await db.auth.signOut();
-      location.reload();
-      return;
-    }
-    if (me) {
-      myPlayerId = me.id;
-      await initNav(me.id, me.is_admin);
-    }
-  }
-
   const ranked = withRanks(rows);
 
-  // the season layer (badges, halls, howler ballot) fails soft -
-  // a missing RPC never takes the scoreboard down with it
-  let season = { byPlayer: new Map(), groups: [], records: [], howlers: [] };
-  try {
-    season = await fetchSeason(db);
-  } catch (e) {
-    console.error("Season stats unavailable:", e);
-  }
-
+  // Paint the standings straight away, before the season RPCs land -
+  // badge chips fill in a moment later once the season data arrives.
   renderPodium(ranked.slice(0, 3));
-  renderRest(ranked.slice(3), meSlug, season);
-  renderSeasonRail(db, season, ranked);
+  renderRest(ranked.slice(3), meSlug, EMPTY_SEASON);
 
   if (meRow && ranked[0] && ranked[0].display_name === meRow.display_name) {
     fireConfetti($("confetti"));
   }
 
-  await loadSuggestions();
+  // Identity: nav visibility and suggestion ownership need my id.
+  if (user) {
+    const { data: me } = await meReq;
+    if (!me) {
+      await db.auth.signOut();
+      location.reload();
+      return;
+    }
+    myPlayerId = me.id;
+    initNav(me.id, me.is_admin);
+  }
+  loadSuggestions();
+
+  // Season layer streams in when its heavier queries return, then the
+  // rankings re-render with badge chips and the rail fills.
+  const season = await seasonReq;
+  renderRest(ranked.slice(3), meSlug, season);
+  renderSeasonRail(db, season, ranked);
 }
 
 /* ============================================================

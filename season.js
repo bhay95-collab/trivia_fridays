@@ -5,7 +5,7 @@
    are up. Everything fails soft: a missing RPC hides a panel,
    it never breaks the scoreboard.
    ============================================================ */
-import { spoonRoast } from "./streaks.js";
+import { randomRoast } from "./streaks.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
@@ -76,12 +76,12 @@ function renderSpoon(ranked) {
   const played = ranked.filter((r) => r.weeks_played > 0);
   if (played.length < 4) return;
   const last = played[played.length - 1];
-  const seasonWeek = Math.max(...played.map((r) => r.weeks_played));
   const el = $("spoon");
   el.hidden = false;
-  el.innerHTML = `<b>Wooden Spoon:</b> ${esc(last.display_name)} ` +
-    `${esc(spoonRoast(seasonWeek))} ` +
-    `(${fmt(last.total_points)} points across ${last.weeks_played} quizzes.)`;
+  el.innerHTML =
+    `<span class="spoon-tab">🥄 Wooden Spoon</span>` +
+    `<p class="spoon-line"><b>${esc(last.display_name)}</b> ${esc(randomRoast())}</p>` +
+    `<span class="spoon-foot">${fmt(last.total_points)} points · ${last.weeks_played} ${last.weeks_played === 1 ? "quiz" : "quizzes"}</span>`;
 }
 
 function renderHalls(season) {

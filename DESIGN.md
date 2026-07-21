@@ -188,11 +188,18 @@ generated tones suit the arcade aesthetic better than samples would.
 
 - **Streak copy** (`streaks.js`) is upbeat and a little cocky when a
   streak lands, dryly affectionate when one breaks. Never insulting.
-- **Wooden Spoon roasts** rotate deterministically by season week
-  count so the room sees the same joke, and are checked by a unit test
-  (`tests/streaks.test.js`) to stay strictly about trivia performance —
-  never appearance, intelligence, or anything that would be awkward to
-  sit next to on Monday.
+- **Wooden Spoon roasts** are a large set (`streaks.js: ROASTS`) picked
+  at random on every leaderboard load (`randomRoast()`), so the plaque
+  tells a different joke each visit. The whole set is checked by a unit
+  test (`tests/streaks.test.js`) to stay strictly about trivia
+  performance — never appearance, intelligence, or anything that would
+  be awkward to sit next to on Monday. Every line reads as "{name}
+  {roast}", so new lines must continue that sentence.
+- **The Wooden Spoon plaque** is its own material: a bronze,
+  hazard-taped board with a screwed-on `.spoon-tab` (the title-tab
+  treatment in `--spoon` instead of gold) and a hard offset shadow, so
+  the booby prize reads as a distinct object and never blends into the
+  cabinet panels around it in the rail.
 - **Badges are generous by design** (`sql/14_season_stats.sql:
   season_badges()`) — nine badge types derived entirely from existing
   scoring data, tuned so a normal office season leaves most players

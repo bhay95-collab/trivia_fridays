@@ -504,14 +504,33 @@ body.house-dim .page-strip{
 
 .rule{ text-align:center; color:var(--dim); font-size:.8rem; margin:1.6rem 0 0; }
 
-/* --- wooden spoon --- */
+/* --- wooden spoon: a bronze booby-prize plaque, hazard-taped and
+       screwed on, so it stops blending into the rail --- */
 .spoon{
-  margin-bottom:1.5rem; padding:1.1rem 1.2rem;
-  border:2px dashed var(--spoon); border-radius:var(--radius-cab);
-  background:rgba(201,143,82,.08);
-  font-size:.92rem; color:#EAC79E;
+  position:relative;
+  margin:1.1rem 0 1.5rem; padding:1.5rem 1.2rem 1.15rem;
+  border-radius:var(--radius-cab);
+  border:2px solid var(--spoon);
+  background:
+    repeating-linear-gradient(45deg, rgba(201,143,82,.12) 0 12px, transparent 12px 24px),
+    linear-gradient(180deg, #2A1A10, #1B1008);
+  box-shadow:0 6px 0 rgba(0,0,0,.45), 0 0 26px rgba(201,143,82,.3);
+  font-size:.95rem; line-height:1.5; color:#EAC79E;
 }
-.spoon b{ color:var(--spoon); font-family:var(--font-display); font-weight:400; letter-spacing:.02em; }
+.spoon-tab{
+  position:absolute; top:0; left:1rem; transform:translateY(-55%) rotate(-2deg);
+  font-family:var(--font-display); font-weight:400; letter-spacing:.02em;
+  font-size:.9rem; line-height:1; color:var(--ink);
+  background:var(--spoon); padding:.45rem .8rem .38rem; border-radius:8px;
+  box-shadow:0 3px 0 #8F5E2C; white-space:nowrap;
+}
+.spoon-line{ margin:.15rem 0 0; }
+.spoon-line b{ color:var(--spoon); font-family:var(--font-display); font-weight:400; letter-spacing:.02em; }
+.spoon-foot{
+  display:block; margin-top:.65rem;
+  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--spoon); opacity:.85;
+}
 
 /* --- halls of fame & shame --- */
 .hall-list{ list-style:none; margin:0; padding:0; }
