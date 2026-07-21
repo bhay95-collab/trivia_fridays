@@ -1,6 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, LOGIN_DOMAIN } from "./config.js";
-import { fireConfetti } from "./fx.js";
+import { fireConfetti, countUp } from "./fx.js";
 import { fetchSeason, badgeChips, renderSeasonRail } from "./season.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -300,10 +300,14 @@ function renderPodium(top) {
       <div class="plinth p${i + 1}">
         <span class="medal">${["1st", "2nd", "3rd"][i]}</span>
         <span class="who">${esc(r.display_name)}</span>
-        <span class="pts">${fmt(r.total_points)}</span>
+        <span class="pts" data-pts="${r.total_points}">${fmt(r.total_points)}</span>
         <span class="sub">${r.weeks_played} quizzes</span>
       </div>`;
   }).join("");
+
+  // roll each podium total up from zero on arrival, like a score reel
+  $("podium").querySelectorAll(".pts").forEach((el) =>
+    countUp(el, el.dataset.pts, { format: fmt }));
 }
 
 function renderRest(rows, meSlug, season) {

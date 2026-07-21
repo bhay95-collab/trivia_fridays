@@ -27,6 +27,26 @@ gets invented without extending this list first.
   biggest moments in the product: **Start the quiz** and **Reveal the
   winners**. Everything else is magenta or a small cabinet-toned button.
 
+Three further materials extend the system for the full arcade look.
+They lean *harder* into the same 1980s reference — they do not soften it.
+
+- **Grid horizon** (`.synth-horizon`) — the synthwave world the cabinet
+  sits in: a perspective neon grid flying toward the viewer, an Outrun
+  sun on the horizon, a twinkling starfield, a glowing horizon line. One
+  fixed layer at `z-index:-1`, `pointer-events:none`, kept dim so panels
+  and screens still read on a projector. Present on every page.
+- **CRT glass** (`.screen::before`) — turns any recessed `.screen` into a
+  real tube: a curved-glass reflection highlight, a corner vignette, and
+  one bright band rolling slowly down the screen, on top of the static
+  scanlines that were already there. Chromatic RGB-split is applied only
+  to the largest display text (`.present-prompt`) so small copy stays
+  crisp — never split rankings or body text.
+- **Neon tube** — the marquee wordmark (`.wordmark`) and page names
+  (`.page-name`) are lit as glowing tubes (white core + coloured halos,
+  cyan top / magenta bottom, a tired-tube buzz on one line). Neon is for
+  *signage only* — the gold title tabs stay plastic, so the two materials
+  never blur together.
+
 Do not introduce soft glassmorphism, AI-purple gradient blur, or
 side-tab accent borders (a thick colour bar down one edge of a card) —
 the impeccable design hook flags side-tabs specifically as the most
@@ -109,6 +129,32 @@ Everywhere else, motion is restrained and purpose-built:
   used in this app; if one is added later, it should scale from its
   trigger, not its center.
 
+Arcade-machine motion added in the spectacle pass, all ambient and
+compositor-only (transform / opacity / background-position):
+
+- **CRT power-on** (`body::after`, `@keyframes crt-power`) — a thin
+  bright line snaps open to a full flash on every page load, then fades.
+- **Score reels** (`fx.js: countUp`) — podium totals odometer-roll from
+  zero and punch (`.is-scoring`) on landing: on the leaderboard as it
+  loads, and on the Present podium as each plinth lands.
+- **Winner sunburst** (`fx.js: podiumSunburst`) — slow rotating neon
+  spokes spawned behind the winner *inside the existing `revealPodium`
+  timeline* (not an independent timer), removed on the next screen change.
+- **Streak shockwave** (`fx.js: streakShock`) — a ring blasts across the
+  screen when a run lands in the results reveal, alongside the existing
+  `is-onfire` glow.
+- **Ambient neon** — the top marquee strip chases two colours, the
+  leaderboard stage and marquee sign chase their bulb dots, and buttons
+  gain a neon rim on hover.
+
+`prefers-reduced-motion` handling for all of the above follows the
+existing rule (motion off, finished state shown): the power-on flash is
+**hidden outright** (`body::after{ display:none }`) so it can't linger as
+a solid sheet; count-ups snap to the final value; the sunburst and
+shockwave are skipped entirely (their helpers return early, like
+confetti); the grid, sun, stars, neon and attract prompts all keep their
+static finished state.
+
 ### `prefers-reduced-motion` is motion off, not motion down
 
 The global rule kills every animation and transition outright. Where a
@@ -132,10 +178,11 @@ generated tones suit the arcade aesthetic better than samples would.
   as the browser's required user-gesture to unlock the `AudioContext`
   — don't try to play audio before that click has happened.
 - Each effect is a named export on `sfx` (`tick`, `buzz`, `chime`,
-  `sting`, `womp`, `slam`, `drumroll`, `fanfare`) mapped to one game
-  moment each. Don't reuse `chime` for something that isn't "correct
-  answer," and don't add a new effect without a one-sentence reason a
-  player would recognise.
+  `sting`, `womp`, `slam`, `drumroll`, `fanfare`, `powerOn`) mapped to
+  one game moment each — `powerOn` is the rising CRT-whine sweep played
+  when the host starts the quiz. Don't reuse `chime` for something that
+  isn't "correct answer," and don't add a new effect without a
+  one-sentence reason a player would recognise.
 
 ## Content tone
 

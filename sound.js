@@ -83,6 +83,13 @@ export const sfx = {
     tone({ freq: 62, to: 40, type: "square", dur: 0.4, peak: 0.3 });
   },
 
+  /* Machine powering on: a rising sweep with a CRT whine on top,
+     played when the host starts the quiz. */
+  powerOn() {
+    tone({ freq: 70, to: 520, type: "sawtooth", dur: 0.42, peak: 0.13 });
+    tone({ freq: 14000, to: 60, type: "square", dur: 0.5, peak: 0.05 });
+  },
+
   /* Correct answer. Two bright notes and a sparkle on top. */
   chime() {
     tone({ freq: 659, type: "sine", dur: 0.16, peak: 0.4 });

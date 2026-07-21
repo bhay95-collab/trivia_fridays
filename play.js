@@ -2,7 +2,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { mediaRendererMarkup } from "./media-utils.js";
 import { sfx } from "./sound.js";
-import { animateReorder, reducedMotion, delay } from "./fx.js";
+import { animateReorder, reducedMotion, delay, streakShock } from "./fx.js";
 import { streakSegments, streakLine, streakBreakLine, STREAK_MIN } from "./streaks.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -387,10 +387,15 @@ async function runReveal(items) {
       if (it.verdict === "correct") sfx.chime();
       else if (it.verdict === "partial") sfx.tick();
       running += it.points;
-      $("results-total").textContent = `${fmtPoints(running)} pts`;
+      const totalEl = $("results-total");
+      totalEl.textContent = `${fmtPoints(running)} pts`;
+      totalEl.classList.remove("is-scoring");
+      void totalEl.offsetWidth; // restart the pop
+      totalEl.classList.add("is-scoring");
       await delay(520);
     } else if (it.kind === "streak") {
       sfx.sting();
+      streakShock();
       document.body.classList.add("is-onfire");
       setTimeout(() => document.body.classList.remove("is-onfire"), 1900);
       await delay(950);

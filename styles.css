@@ -50,14 +50,29 @@ body{
   margin:0;
   min-height:100dvh;
   background:
-    radial-gradient(1200px 700px at 50% -10%, #3F1E66 0%, transparent 60%),
-    radial-gradient(800px 500px at 110% 100%, #2A1160 0%, transparent 65%),
+    radial-gradient(1100px 640px at 50% -18%, #2E1556 0%, transparent 60%),
     var(--ink);
   color:var(--cream);
   font-family:var(--font-body);
   -webkit-font-smoothing:antialiased;
   padding:0 1rem 4.5rem;
   overflow-x:hidden;
+}
+
+/* CRT power-on: a thin bright line snaps open to a full flash on
+   every page load, then fades. Pure CSS, runs once. Reduced motion
+   hides it entirely (see the reduced-motion block) so it can never
+   sit on screen as a solid overlay. */
+body::after{
+  content:""; position:fixed; inset:0; z-index:60; pointer-events:none;
+  background:var(--cream);
+  animation:crt-power .7s ease-out both;
+}
+@keyframes crt-power{
+  0%{ opacity:0; transform:scaleY(.004); }
+  8%{ opacity:.85; transform:scaleY(.004); }
+  20%{ opacity:.45; transform:scaleY(1); }
+  100%{ opacity:0; transform:scaleY(1); }
 }
 
 main{ max-width:1200px; margin:0 auto; }
@@ -75,18 +90,20 @@ main{ max-width:1200px; margin:0 auto; }
 }
 .skip-link:focus{ left:0; }
 
-/* --- chasing light strip across the very top --- */
+/* --- chasing light strip across the very top: two-colour marquee --- */
 .bulbs{
-  position:fixed; inset:0 0 auto 0; height:6px; z-index:9;
+  position:fixed; inset:0 0 auto 0; height:7px; z-index:9;
   background:repeating-linear-gradient(90deg,
-    var(--gold) 0 6px, transparent 6px 26px);
-  filter:drop-shadow(0 0 6px var(--gold));
-  opacity:.85;
+    var(--gold) 0 6px, transparent 6px 20px,
+    var(--magenta) 20px 26px, transparent 26px 40px);
+  background-size:40px 100%;
+  filter:drop-shadow(0 0 6px rgba(255,197,49,.7));
+  opacity:.9;
   animation:chase 1.6s linear infinite;
 }
 @keyframes chase{ to{ background-position:40px 0; } }
 /* winner moment: the lights lose their minds */
-body.is-strobe .bulbs{ animation-duration:.35s; opacity:1; height:8px; }
+body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
 
 /* ================= control deck (header) ================= */
 .deck{
@@ -136,8 +153,11 @@ body.is-strobe .bulbs{ animation-duration:.35s; opacity:1; height:8px; }
 }
 .page-name{
   font-family:var(--font-display); margin:0; line-height:1;
-  font-size:clamp(1.7rem, 4.5vw, 2.6rem); color:var(--cream);
-  text-shadow:0 0 22px rgba(255,45,149,.35);
+  font-size:clamp(1.7rem, 4.5vw, 2.6rem); color:#fff;
+  text-shadow:
+    0 0 4px rgba(255,243,222,.9),
+    0 0 14px rgba(255,45,149,.7),
+    0 0 30px rgba(255,45,149,.4);
 }
 .tagline{ margin:0; color:var(--dim); font-size:.95rem; }
 
@@ -156,6 +176,13 @@ body.is-strobe .bulbs{ animation-duration:.35s; opacity:1; height:8px; }
   background-size:24px 12px, 24px 12px;
   background-repeat:repeat-x;
   background-position:12px 10px, 12px calc(100% - 10px);
+  /* dots chase around the frame; halo breathes between gold and magenta */
+  animation:sign-chase 1.2s linear infinite, sign-buzz 5s ease-in-out infinite;
+}
+@keyframes sign-chase{ to{ background-position:36px 10px, 36px calc(100% - 10px); } }
+@keyframes sign-buzz{
+  0%,100%{ box-shadow:0 10px 0 rgba(0,0,0,.5), inset 0 0 0 6px var(--ink), 0 0 28px rgba(255,197,49,.12); }
+  50%{ box-shadow:0 10px 0 rgba(0,0,0,.5), inset 0 0 0 6px var(--ink), 0 0 60px rgba(255,45,149,.3); }
 }
 .wordmark{
   font-family:var(--font-display);
@@ -163,17 +190,27 @@ body.is-strobe .bulbs{ animation-duration:.35s; opacity:1; height:8px; }
   font-size:clamp(2.6rem, 10vw, 5.4rem);
   display:flex; flex-direction:column; align-items:center;
 }
+/* neon tube: bright white core wrapped in coloured halos, top line
+   cyan, bottom line magenta, bottom line buzzes like a tired tube */
 .wordmark span:first-child{
-  color:var(--cream);
-  text-shadow:0 0 24px rgba(255,243,222,.35);
+  color:#fff;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 11px var(--cyan),
+    0 0 26px var(--cyan),
+    0 0 44px rgba(37,232,226,.6);
 }
 .wordmark span:last-child{
-  color:var(--magenta);
-  text-shadow:0 0 18px rgba(255,45,149,.55);
+  color:#fff;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 12px var(--magenta),
+    0 0 28px var(--magenta),
+    0 0 50px rgba(255,45,149,.7);
   animation:flicker 7s infinite steps(1);
 }
 @keyframes flicker{
-  0%,96%,100%{ opacity:1 } 97%{ opacity:.35 } 98%{ opacity:1 } 99%{ opacity:.5 }
+  0%,96%,100%{ opacity:1 } 97%{ opacity:.4 } 98%{ opacity:1 } 99%{ opacity:.55 }
 }
 .eyebrow{
   max-width:760px; margin:1rem auto 0;
@@ -193,7 +230,7 @@ body.is-strobe .bulbs{ animation-duration:.35s; opacity:1; height:8px; }
   background:var(--magenta); color:#fff;
   box-shadow:0 5px 0 var(--magenta-deep), 0 9px 18px rgba(0,0,0,.35);
 }
-.btn-primary:hover{ filter:brightness(1.08); }
+.btn-primary:hover{ filter:brightness(1.08); box-shadow:0 5px 0 var(--magenta-deep), 0 9px 18px rgba(0,0,0,.35), 0 0 20px rgba(255,45,149,.55); }
 .btn-primary:active{ transform:translateY(4px); box-shadow:0 1px 0 var(--magenta-deep); }
 
 .btn-gold{
@@ -201,7 +238,7 @@ body.is-strobe .bulbs{ animation-duration:.35s; opacity:1; height:8px; }
   font-family:var(--font-display); font-weight:400; letter-spacing:.02em;
   box-shadow:0 5px 0 var(--gold-deep), 0 9px 18px rgba(0,0,0,.35);
 }
-.btn-gold:hover{ filter:brightness(1.06); }
+.btn-gold:hover{ filter:brightness(1.06); box-shadow:0 5px 0 var(--gold-deep), 0 9px 18px rgba(0,0,0,.35), 0 0 22px rgba(255,197,49,.55); }
 .btn-gold:active{ transform:translateY(4px); box-shadow:0 1px 0 var(--gold-deep); }
 
 .btn-ghost{
@@ -278,18 +315,37 @@ section:nth-of-type(even) > * > .panel-title{ transform:rotate(1deg); }
 .card-stage{ display:flex; justify-content:center; padding-top:1rem; }
 .marquee-card{ width:min(430px, 100%); padding:1.8rem 1.5rem; }
 
-/* recessed score display */
+/* recessed score display, now a real CRT tube: curved glass sheen,
+   corner vignette, static scanlines, and one bright band rolling
+   slowly down the screen */
 .screen{
-  position:relative;
+  position:relative; isolation:isolate;
   background:var(--screen);
   border-radius:var(--radius-screen);
   box-shadow:inset 0 3px 0 rgba(0,0,0,.65), inset 0 0 26px rgba(0,0,0,.5);
   overflow:hidden;
 }
 .screen::after{
-  content:""; position:absolute; inset:0; pointer-events:none;
+  content:""; position:absolute; inset:0; z-index:2; pointer-events:none;
   background:repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.16) 2px 3px);
 }
+.screen::before{
+  content:""; position:absolute; inset:0; z-index:2; pointer-events:none;
+  border-radius:inherit;
+  background:
+    radial-gradient(120% 85% at 50% -25%, rgba(255,255,255,.10), transparent 55%),
+    linear-gradient(180deg, transparent 0 47%, rgba(255,255,255,.06) 49% 51%, transparent 53%);
+  background-size:100% 100%, 100% 220%;
+  background-repeat:no-repeat;
+  background-position:50% 0, 0 -60%;
+  box-shadow:inset 0 0 44px rgba(0,0,0,.5);
+  animation:crt-roll 6.5s linear infinite;
+}
+@keyframes crt-roll{ to{ background-position:50% 0, 0 160%; } }
+/* phosphor bloom on the numerals that live in screens */
+.rankings .score{ text-shadow:0 0 9px rgba(255,197,49,.45); }
+.results-total-led{ text-shadow:0 0 12px rgba(37,232,226,.5); }
+.led{ text-shadow:0 0 8px rgba(37,232,226,.5); }
 
 .led{
   font-family:var(--font-mono); font-variant-numeric:tabular-nums;
@@ -313,7 +369,9 @@ section:nth-of-type(even) > * > .panel-title{ transform:rotate(1deg); }
   background-size:24px 12px, 24px 12px;
   background-repeat:repeat-x;
   background-position:12px 8px, 12px calc(100% - 8px);
+  animation:stage-chase 1.2s linear infinite;
 }
+@keyframes stage-chase{ to{ background-position:36px 8px, 36px calc(100% - 8px); } }
 .stage-label{
   position:absolute; top:0; left:50%; transform:translate(-50%,-55%) rotate(-1.5deg);
   font-family:var(--font-display); font-size:.85rem; line-height:1;
@@ -780,7 +838,12 @@ body.page-present main{ max-width:1440px; }
 .present-prompt{
   font-family:var(--font-display);
   font-size:clamp(1.9rem, 5.2vw, 4.2rem); line-height:1.22;
-  text-align:center; margin:1.2rem auto 2rem; max-width:1200px; color:var(--cream);
+  text-align:center; margin:1.2rem auto 2rem; max-width:1200px; color:#fff;
+  /* CRT chromatic fringe — only on the big display text, so small
+     copy stays crisp on the projector */
+  text-shadow:
+    -2px 0 rgba(255,45,149,.5), 2px 0 rgba(37,232,226,.45),
+    0 0 22px rgba(255,243,222,.3);
 }
 
 .present-options{
@@ -848,6 +911,117 @@ body.page-present{ padding-bottom:9.5rem; }
 .podium-zone .rankings{ margin-top:1rem; }
 .reveal-cta{ text-align:center; margin:0 auto 1rem; max-width:420px; }
 
+/* ===========================================================
+   SYNTHWAVE WORLD — the neon environment the cabinet sits in.
+   One fixed layer behind all content: a perspective grid flying
+   toward the viewer, an Outrun sun on the horizon, a twinkling
+   starfield, and a glowing horizon line. Sits at z-index:-1 so it
+   paints above the flat body base but below every panel.
+   =========================================================== */
+.synth-horizon{
+  position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
+}
+.synth-stars{
+  position:absolute; inset:0 0 45% 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 30%, #fff, transparent),
+    radial-gradient(1px 1px at 32% 12%, #fff, transparent),
+    radial-gradient(1px 1px at 48% 40%, #fff, transparent),
+    radial-gradient(1px 1px at 62% 18%, #fff, transparent),
+    radial-gradient(1px 1px at 74% 34%, #fff, transparent),
+    radial-gradient(1px 1px at 86% 14%, #fff, transparent),
+    radial-gradient(1px 1px at 8% 52%, #fff, transparent),
+    radial-gradient(1px 1px at 92% 48%, #fff, transparent);
+  opacity:.5;
+  animation:twinkle 4.5s ease-in-out infinite alternate;
+}
+@keyframes twinkle{ from{ opacity:.28 } to{ opacity:.6 } }
+.synth-sun{
+  position:absolute; left:50%; bottom:45%; width:min(340px, 56vw); aspect-ratio:1;
+  transform:translate(-50%, 50%);
+  border-radius:50%;
+  background:linear-gradient(180deg, var(--gold), #FF7A3D 45%, var(--magenta));
+  -webkit-mask:repeating-linear-gradient(180deg, #000 0 12px, transparent 12px 17px);
+  mask:repeating-linear-gradient(180deg, #000 0 12px, transparent 12px 17px);
+  filter:drop-shadow(0 0 42px rgba(255,45,149,.4));
+  opacity:.55;
+}
+.synth-glow{
+  position:absolute; left:0; right:0; bottom:45%; height:2px;
+  background:linear-gradient(90deg, transparent, var(--cyan), transparent);
+  box-shadow:0 0 26px 6px rgba(37,232,226,.35);
+  opacity:.6;
+}
+.synth-grid{
+  position:absolute; left:-30%; right:-30%; bottom:0; height:52%;
+  background-image:
+    linear-gradient(to right, rgba(37,232,226,.5) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,45,149,.42) 1px, transparent 1px);
+  background-size:4% 40px, 4% 40px;
+  transform:perspective(340px) rotateX(74deg);
+  transform-origin:bottom center;
+  opacity:.5;
+  -webkit-mask-image:linear-gradient(to bottom, transparent, #000 45%);
+  mask-image:linear-gradient(to bottom, transparent, #000 45%);
+  animation:grid-run 1.3s linear infinite;
+}
+@keyframes grid-run{ to{ background-position:0 40px, 0 40px; } }
+
+/* ===========================================================
+   ATTRACT MODE — the arcade idle blink. Steady, readable text
+   that pulses like a "PRESS START" prompt on an unattended machine.
+   =========================================================== */
+.attract{
+  font-family:var(--font-mono); font-weight:700;
+  color:var(--cyan); letter-spacing:.18em; text-transform:uppercase;
+  font-size:.78rem; text-align:center; margin:1rem 0 0;
+  text-shadow:0 0 10px rgba(37,232,226,.6);
+  animation:attract-blink 1.15s steps(1) infinite;
+}
+@keyframes attract-blink{ 50%{ opacity:.12; } }
+
+/* ===========================================================
+   PINBALL SCORE THEATRICS
+   =========================================================== */
+/* a number punches up as it lands on its final value */
+.is-scoring{ animation:score-pop .45s var(--ease-out); }
+@keyframes score-pop{
+  0%{ transform:scale(1); }
+  40%{ transform:scale(1.28); filter:brightness(1.6); }
+  100%{ transform:scale(1); }
+}
+
+/* sunburst behind the winner: slow rotating neon spokes, masked to
+   radiate outward from the plinth. Spawned + removed by present.js. */
+.sunburst{
+  position:absolute; left:50%; top:38%; width:8px; height:8px;
+  z-index:0; pointer-events:none; transform:translate(-50%,-50%);
+}
+.sunburst::before{
+  content:""; position:absolute; left:50%; top:50%;
+  width:220vmax; height:220vmax; transform:translate(-50%,-50%);
+  background:repeating-conic-gradient(from 0deg,
+    rgba(255,197,49,.22) 0 5deg, transparent 5deg 16deg);
+  -webkit-mask:radial-gradient(circle, #000 0 38%, transparent 62%);
+  mask:radial-gradient(circle, #000 0 38%, transparent 62%);
+  animation:spin 16s linear infinite;
+}
+@keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
+
+/* streak shockwave: a ring blasts out across the screen. Spawned +
+   removed by play.js when a run lands. */
+.shockwave{
+  position:fixed; left:50%; top:58%; width:18px; height:18px; z-index:6;
+  pointer-events:none; border-radius:50%; border:3px solid var(--magenta);
+  box-shadow:0 0 22px rgba(255,45,149,.7);
+  transform:translate(-50%,-50%);
+  animation:shock .9s ease-out forwards;
+}
+@keyframes shock{
+  from{ opacity:.8; transform:translate(-50%,-50%) scale(0); }
+  to{ opacity:0; transform:translate(-50%,-50%) scale(44); }
+}
+
 /* ================= responsive ================= */
 @media (max-width: 560px){
   .rankings li{ grid-template-columns:2.2rem 1fr auto; }
@@ -869,4 +1043,10 @@ body.page-present{ padding-bottom:9.5rem; }
   .plinth.is-hidden{ opacity:1; transform:none; }
   body.house-dim #view-present > :not(.podium-zone),
   body.house-dim .deck, body.house-dim .page-strip{ opacity:1; filter:none; }
+  /* the CRT power-on is a pure animation — with animation killed it
+     would otherwise linger as a solid cream sheet, so drop it. The
+     synth world, neon and attract text all keep their static
+     finished state (a still grid, steady glow, steady prompt). */
+  body::after{ display:none !important; }
+  .sunburst, .shockwave{ display:none !important; }
 }

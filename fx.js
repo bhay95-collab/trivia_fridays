@@ -54,6 +54,66 @@ export function animateReorder(list, render) {
 }
 
 /* ============================================================
+   Count-up. A number odometer-rolls from zero to its value, then
+   punches once on landing. Under reduced motion it snaps straight
+   to the final value with no roll and no pop.
+     el      — the element whose textContent holds the number
+     to      — the final numeric value
+     format  — how to render an intermediate/final value as text
+   ============================================================ */
+export function countUp(el, to, { ms = 900, format = (n) => String(Math.round(n)) } = {}) {
+  if (!el) return;
+  const target = Number(to) || 0;
+
+  if (reducedMotion()) {
+    el.textContent = format(target);
+    return;
+  }
+
+  const start = performance.now();
+  (function step(now) {
+    const t = Math.min((now - start) / ms, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = format(target * eased);
+    if (t < 1) {
+      requestAnimationFrame(step);
+    } else {
+      el.textContent = format(target);
+      el.classList.remove("is-scoring");
+      void el.offsetWidth; // restart the pop animation if it just ran
+      el.classList.add("is-scoring");
+    }
+  })(start);
+}
+
+/* ============================================================
+   Winner sunburst. Slow rotating neon spokes behind the podium,
+   spawned into a positioned container and returned with a cleanup
+   handle. Skipped (returns a no-op) under reduced motion.
+   ============================================================ */
+export function podiumSunburst(container) {
+  if (reducedMotion() || !container) return () => {};
+  const el = document.createElement("div");
+  el.className = "sunburst";
+  el.setAttribute("aria-hidden", "true");
+  container.insertBefore(el, container.firstChild);
+  return () => el.remove();
+}
+
+/* ============================================================
+   Streak shockwave. A ring blasts across the screen when a run
+   lands, then removes itself. Skipped under reduced motion.
+   ============================================================ */
+export function streakShock() {
+  if (reducedMotion()) return;
+  const el = document.createElement("div");
+  el.className = "shockwave";
+  el.setAttribute("aria-hidden", "true");
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 950);
+}
+
+/* ============================================================
    Confetti. Canvas-based, fixed duration, cleans up after
    itself. Skipped entirely under reduced motion.
    ============================================================ */

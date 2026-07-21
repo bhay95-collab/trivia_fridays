@@ -2,7 +2,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { mediaRendererMarkup } from "./media-utils.js";
 import { sfx } from "./sound.js";
-import { fireConfetti, delay, reducedMotion } from "./fx.js";
+import { fireConfetti, delay, reducedMotion, countUp, podiumSunburst } from "./fx.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -17,6 +17,7 @@ let finalStandings = [];
 let channel = null;
 let meterTicker = null;
 let fallbackTimer = null;
+let clearSunburst = null;   // removes the winner sunburst on the next screen change
 
 /* ============================================================
    BOOT
@@ -172,6 +173,7 @@ $("start-week-btn").addEventListener("click", async () => {
   }
 
   currentWeek.status = "live";
+  sfx.powerOn(); // the machine boots up
   $("ready-panel").hidden = true;
   $("tagline").textContent = currentWeek.title || "Live now";
   await enterLive();
@@ -181,6 +183,7 @@ function stopAllTimers() {
   if (meterTicker) clearInterval(meterTicker);
   if (fallbackTimer) clearInterval(fallbackTimer);
   if (channel) db.removeChannel(channel);
+  if (clearSunburst) { clearSunburst(); clearSunburst = null; }
   meterTicker = null;
   fallbackTimer = null;
   channel = null;
@@ -524,7 +527,7 @@ async function revealPodium(rows) {
       <div class="plinth p${i + 1} is-hidden" data-rank="${i}">
         <span class="medal">${["1st", "2nd", "3rd"][i]}</span>
         <span class="who">${esc(r.display_name)}</span>
-        <span class="pts">${fmtPoints(r.total_points)}</span>
+        <span class="pts" data-pts="${r.total_points}">${fmtPoints(r.total_points)}</span>
       </div>`;
   }).join("");
 
@@ -544,6 +547,8 @@ async function revealPodium(rows) {
   await land(1);                  // 2nd
   await delay(1700);              // the held beat before the winner
   roll.stop();
+  if (clearSunburst) clearSunburst();
+  clearSunburst = podiumSunburst($("present-podium").closest(".stage"));
   await land(0);                  // 1st
   sfx.fanfare();
   document.body.classList.add("is-strobe");
@@ -560,6 +565,8 @@ async function land(rank) {
   if (!el) return;
   el.classList.remove("is-hidden");
   el.classList.add("is-landing");
+  const pts = el.querySelector(".pts");
+  if (pts) countUp(pts, pts.dataset.pts, { format: fmtPoints, ms: 700 });
   sfx.slam();
   await delay(480);
 }
