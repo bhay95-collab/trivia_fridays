@@ -74,11 +74,16 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/11_security_hardening.sql`, copy the whole file, paste, **Run**
 - Locks down a grading function that was reachable directly (not just through the host and player pages), and pins down a setting on one helper function. Safe to re-run any time.
 
-**1.14 Check it worked.**
+**1.14 Make the leaderboard view respect row level security.**
+- **SQL Editor** → **New query**
+- Open `sql/12_leaderboard_view_security.sql`, copy the whole file, paste, **Run**
+- Views default to running as whoever created them rather than the person asking, silently bypassing row level security. Changes nothing visible today, closes the gap for later. Safe to re-run any time.
+
+**1.15 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 21 people. Benjamin Hay on top with 54.
 
-**1.15 Grab your two keys.**
+**1.16 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 

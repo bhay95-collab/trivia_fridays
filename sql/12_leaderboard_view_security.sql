@@ -1,0 +1,16 @@
+-- ============================================================
+-- TRIVIA FRIDAYS - LEADERBOARD VIEW RUNS AS THE QUERYING USER
+-- Paste this whole file into Supabase > SQL Editor > Run
+-- Safe to re-run: setting the same option twice is a no-op.
+--
+-- Views default to running with the permissions of whoever created
+-- them, not the person querying them - so leaderboard was silently
+-- bypassing row level security on players and week_scores rather
+-- than respecting it. Today that changes nothing visible, since
+-- both of those tables already have a "using (true)" read policy -
+-- full public read - so the view and the tables already agree. But
+-- it is the wrong default to leave in place: if either policy is
+-- ever tightened later, the view would keep ignoring it unless this
+-- is set now.
+-- ============================================================
+alter view leaderboard set (security_invoker = true);
