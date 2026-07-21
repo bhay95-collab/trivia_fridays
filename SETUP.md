@@ -69,11 +69,16 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/10_no_more_night.sql`, copy the whole file, paste, **Run**
 - Wording only, nothing structural: every message a player or host sees now says "quiz" instead of "quiz night" or "this night" — the quiz still runs every Friday, just during the work day. Safe to re-run any time.
 
-**1.13 Check it worked.**
+**1.13 Close two gaps the Supabase linter flags.**
+- **SQL Editor** → **New query**
+- Open `sql/11_security_hardening.sql`, copy the whole file, paste, **Run**
+- Locks down a grading function that was reachable directly (not just through the host and player pages), and pins down a setting on one helper function. Safe to re-run any time.
+
+**1.14 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 21 people. Benjamin Hay on top with 54.
 
-**1.14 Grab your two keys.**
+**1.15 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 
