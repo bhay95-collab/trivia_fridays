@@ -32,6 +32,11 @@
   --radius-cab: 14px;
   --radius-screen: 10px;
   --radius-btn: 10px;
+
+  /* the whole site is a fixed dark theme, never adaptive - tell the
+     browser so native chrome (selects, date pickers, scrollbars)
+     renders dark by default instead of falling back to light */
+  color-scheme: dark;
 }
 
 *{ box-sizing:border-box; }
@@ -229,6 +234,17 @@ body.is-strobe .bulbs{ animation-duration:.35s; opacity:1; height:8px; }
   border:1px solid var(--line); border-radius:var(--radius-screen);
   box-shadow:inset 0 2px 0 rgba(0,0,0,.55);
   color:var(--cream); font:500 1rem var(--font-body);
+}
+/* selects keep native OS chrome (often a light box) unless appearance
+   is reset - draw our own chevron so every dropdown matches the
+   fields around it instead of looking like a different component */
+.field select{
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  padding-right:2.3rem;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23A98CC4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7l5 6 5-6'/%3E%3C/svg%3E")
+    no-repeat right .8rem center / 13px,
+    var(--screen);
 }
 .field input#pin, .field input#pin2{ font-family:var(--font-mono); letter-spacing:.4em; }
 
@@ -565,7 +581,12 @@ body.house-dim .page-strip{
 
 .admin-table select.week-host-select{
   width:100%; min-width:140px; padding:.5rem .6rem;
-  background:var(--screen);
+  appearance:none; -webkit-appearance:none; -moz-appearance:none;
+  padding-right:2.1rem;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23A98CC4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7l5 6 5-6'/%3E%3C/svg%3E")
+    no-repeat right .7rem center / 12px,
+    var(--screen);
   border:1px solid var(--line); border-radius:8px;
   color:var(--cream); font:500 .85rem var(--font-body);
 }
