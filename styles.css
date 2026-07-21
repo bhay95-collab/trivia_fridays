@@ -176,8 +176,8 @@ body.is-strobe .bulbs{ animation-duration:.35s; opacity:1; height:8px; }
   0%,96%,100%{ opacity:1 } 97%{ opacity:.35 } 98%{ opacity:1 } 99%{ opacity:.5 }
 }
 .eyebrow{
-  margin:1rem 0 0;
-  font-size:.7rem; letter-spacing:.34em; text-transform:uppercase;
+  max-width:640px; margin:1rem auto 0;
+  font-size:1rem; letter-spacing:.14em; text-transform:uppercase;
   color:var(--cyan);
 }
 .masthead .tagline{ margin-top:.6rem; }
