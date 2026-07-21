@@ -353,3 +353,81 @@ body{
   display:flex; align-items:center; justify-content:space-between; gap:.8rem;
   padding:.75rem .2rem; border-bottom:1px solid rgba(255,241,220,.08);
 }
+
+/* ================= quiz builder ================= */
+.panel-title-row{
+  display:flex; align-items:center; justify-content:space-between; gap:.8rem;
+  margin-bottom: .4rem;
+}
+.panel-title-row .panel-title{ margin-bottom:0; }
+
+.question-card{
+  background: rgba(0,0,0,.22);
+  border: var(--edge); border-radius:16px;
+  padding:1.2rem; margin-bottom:1rem;
+}
+.question-card.is-dirty{ border-color:rgba(255,197,49,.55); }
+
+.question-card-head{
+  display:flex; align-items:center; flex-wrap:wrap; gap:.6rem;
+  margin-bottom:.9rem;
+}
+.question-number{
+  font-family:"Bungee", sans-serif; color:var(--gold); font-size:.95rem;
+}
+.question-card-tools{ display:flex; gap:.4rem; margin-left:auto; }
+
+.question-card-row{ display:flex; flex-wrap:wrap; gap:.9rem; }
+.field-narrow{ flex:0 0 140px; }
+
+.question-card textarea{
+  width:100%; padding:.8rem .9rem; resize:vertical;
+  background: rgba(0,0,0,.32);
+  border: var(--edge); border-radius:12px;
+  color:var(--cream); font:500 1rem "Space Grotesk", sans-serif;
+}
+
+.option-rows, .alt-rows{ display:flex; flex-direction:column; gap:.5rem; margin:.8rem 0; }
+.option-row, .alt-row{ display:flex; align-items:center; gap:.6rem; }
+.option-row .q-option-text, .alt-row .q-alt{
+  flex:1; padding:.6rem .8rem;
+  background: rgba(0,0,0,.32);
+  border: var(--edge); border-radius:10px;
+  color:var(--cream); font:500 .92rem "Space Grotesk", sans-serif;
+}
+.option-key{
+  font-family:"JetBrains Mono", monospace; color:var(--dim);
+  width:1.4rem; text-align:center; flex:0 0 auto;
+}
+.option-row input[type="radio"]{ flex:0 0 auto; width:1.1rem; height:1.1rem; accent-color:var(--magenta); }
+
+.answer-tester{
+  margin-top:1rem; padding-top:1rem; border-top:1px dashed rgba(255,241,220,.14);
+}
+.answer-tester .field{ margin-bottom:.6rem; }
+.test-result{ font-size:.9rem; font-weight:700; margin:.5rem 0 0; min-height:1.2em; }
+.test-result.is-correct{ color:var(--cyan); }
+.test-result.is-partial{ color:var(--gold); }
+.test-result.is-wrong{ color:#FF7A7A; }
+
+.question-card-save{ margin-top:1rem; }
+
+.quiz-preview{ margin-top:1.2rem; display:flex; flex-direction:column; gap:.8rem; }
+.preview-card{
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: var(--edge); border-radius:14px; padding:1rem 1.1rem;
+}
+.preview-number{
+  font-size:.68rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--dim); margin:0 0 .4rem;
+}
+.preview-prompt{ margin:0 0 .7rem; font-weight:500; }
+.preview-options{ display:flex; flex-direction:column; gap:.4rem; }
+.preview-option{
+  padding:.5rem .7rem; border:var(--edge); border-radius:8px; font-size:.9rem;
+}
+.preview-answer{
+  width:100%; padding:.6rem .8rem;
+  background: rgba(0,0,0,.32); border:var(--edge); border-radius:10px;
+  color:var(--dim); font:500 .9rem "Space Grotesk", sans-serif;
+}

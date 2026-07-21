@@ -42,11 +42,16 @@ Follow in order. Roughly 30 minutes.
 - Open `sql/05_poll_functions.sql`, copy the whole file, paste, **Run**
 - This powers the suggestion box, the host's ballot builder, and the voting page. Also safe to re-run any time.
 
-**1.8 Check it worked.**
+**1.8 Add the quiz builder functions.**
+- **SQL Editor** → **New query**
+- Open `sql/06_quiz_functions.sql`, copy the whole file, paste, **Run**
+- This powers the Questions section on the host page — writing questions and answer keys, and grading. Also safe to re-run any time.
+
+**1.9 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 21 people. Benjamin Hay on top with 54.
 
-**1.9 Grab your two keys.**
+**1.10 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 
@@ -117,6 +122,24 @@ Back on the **Host** page, **Close the poll** once people have voted. The
 winning topic is saved automatically and shown on the host page. A tie is
 broken at random and the page tells you when that happens.
 
+**Writing the questions**
+On the **Host** page, scroll down to **Questions**. **Add question**, pick
+multiple choice or free text, write the prompt, and set the points (1 by
+default — make a bonus round worth more if you like). Multiple choice needs
+2 to 6 options with one marked correct. Free text needs a correct answer,
+plus any alternates you want to accept ("JFK" as well as "John F Kennedy").
+
+For every free text question, use **Try an answer** before the night — type
+what you think someone might write and it tells you straight away whether
+that would score full marks, half marks, or nothing. If a reasonable answer
+scores nothing, loosen your answer key now, not during the quiz.
+
+Move questions up and down to reorder them, and use **Show preview** to see
+exactly what players will see — it never shows which option is correct.
+An unsaved question is marked so you never lose track of it, and the page
+will warn you before you navigate away with changes unsaved. Questions lock
+once the night goes live.
+
 **Adding a new starter**
 Admin page → **People** → type their full name → **Add**.
 The login handle (slug) is generated for you — you never type it.
@@ -150,7 +173,6 @@ Live in about a minute. Hard refresh your phone if you see the old version.
 
 ## Still to build
 
-- **Stage 3** — host's quiz builder (multiple choice + free text, points per question)
 - **Stage 4** — live play night, auto-scoring, host override panel
 - **Stage 5** — the chaos: sounds, streak badges, animated overtakes, hall of shame
 
