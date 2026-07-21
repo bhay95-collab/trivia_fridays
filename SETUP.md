@@ -2,7 +2,7 @@
 
 This gives you the whole site: name + PIN login, the season leaderboard,
 topic suggestions and the weekly poll, the host's quiz builder, and a full
-live quiz night on Play (phones) and Present (the shared screen) — start to
+live quiz on Play (phones) and Present (the shared screen) — start to
 finish, nothing left to wire up by hand.
 
 Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
@@ -37,7 +37,7 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 **1.6 Add the admin functions.**
 - **SQL Editor** → **New query**
 - Open `sql/04_admin_functions.sql`, copy the whole file, paste, **Run**
-- This gives the admin page a safe way to add people, reset PINs, and manage quiz nights. It is safe to re-run any time you update it.
+- This gives the admin page a safe way to add people, reset PINs, and manage quizzes. It is safe to re-run any time you update it.
 
 **1.7 Add the topic suggestions and poll functions.**
 - **SQL Editor** → **New query**
@@ -49,26 +49,31 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/06_quiz_functions.sql`, copy the whole file, paste, **Run**
 - This powers the Questions section on the host page — writing questions and answer keys, and grading. Also safe to re-run any time.
 
-**1.9 Add the live quiz night functions.**
+**1.9 Add the live quiz functions.**
 - **SQL Editor** → **New query**
 - Open `sql/07_live_functions.sql`, copy the whole file, paste, **Run**
-- This powers the Play and Present pages — starting the night, opening questions, live standings, and turns on Realtime for the `questions` table so phones update instantly. Also safe to re-run any time.
+- This powers the Play and Present pages — starting the quiz, opening questions, live standings, and turns on Realtime for the `questions` table so phones update instantly. Also safe to re-run any time.
 
 **1.10 Add changeable answers and final submission.**
 - **SQL Editor** → **New query**
 - Open `sql/08_final_submission.sql`, copy the whole file, paste, **Run**
-- This lets players change an answer any time before they personally submit, and moves the answer reveal and host override panel to after the night ends. Also safe to re-run any time.
+- This lets players change an answer any time before they personally submit, and moves the answer reveal and host override panel to after the quiz ends. Also safe to re-run any time.
 
 **1.11 Close a permissions gap on opening questions.**
 - **SQL Editor** → **New query**
 - Open `sql/09_gate_open_before_live.sql`, copy the whole file, paste, **Run**
-- Makes sure a question can never be opened before the night is started, at the database level, not just because the Present page doesn't show a button for it. Safe to re-run any time.
+- Makes sure a question can never be opened before the quiz is started, at the database level, not just because the Present page doesn't show a button for it. Safe to re-run any time.
 
-**1.12 Check it worked.**
+**1.12 Drop "night" from the wording.**
+- **SQL Editor** → **New query**
+- Open `sql/10_no_more_night.sql`, copy the whole file, paste, **Run**
+- Wording only, nothing structural: every message a player or host sees now says "quiz" instead of "quiz night" or "this night" — the quiz still runs every Friday, just during the work day. Safe to re-run any time.
+
+**1.13 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 21 people. Benjamin Hay on top with 54.
 
-**1.13 Grab your two keys.**
+**1.14 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 
@@ -125,13 +130,13 @@ Suggestions are not anonymous — everyone can see who suggested what. Your
 own suggestions have a **Remove** button.
 
 **Building a ballot for the week**
-Whoever is hosting opens the **Host** page (admins can host any night; other
+Whoever is hosting opens the **Host** page (admins can host any quiz; other
 players only see their own). Pick a few suggestions for the ballot, or write
 a topic nobody suggested. **Open the poll** once there are at least two
 options.
 
 **Voting**
-Everyone (except the host of that night) votes on the **Poll** page. Tap a
+Everyone (except the host of that quiz) votes on the **Poll** page. Tap a
 topic to vote, tap another to change your mind. Counts update live.
 
 **Closing the poll**
@@ -146,7 +151,7 @@ default — make a bonus round worth more if you like). Multiple choice needs
 2 to 6 options with one marked correct. Free text needs a correct answer,
 plus any alternates you want to accept ("JFK" as well as "John F Kennedy").
 
-For every free text question, use **Try an answer** before the night — type
+For every free text question, use **Try an answer** before the quiz — type
 what you think someone might write and it tells you straight away whether
 that would score full marks, half marks, or nothing. If a reasonable answer
 scores nothing, loosen your answer key now, not during the quiz.
@@ -155,18 +160,18 @@ Move questions up and down to reorder them, and use **Show preview** to see
 exactly what players will see — it never shows which option is correct.
 An unsaved question is marked so you never lose track of it, and the page
 will warn you before you navigate away with changes unsaved. Questions lock
-once the night goes live.
+once the quiz goes live.
 
-**Running the night**
+**Running the quiz**
 On Teams, share your screen and open the **Present** page — that's what the
 room sees. Everyone else opens **Play** on their phone; it finds the live
-quiz on its own, no code to type. When you're ready, **Start the night** on
+quiz on its own, no code to type. When you're ready, **Start the quiz** on
 Present.
 
 From there: open a question (or press **Space**), read it aloud, and move
 to the next one whenever you like — there's no lock-and-reveal step per
 question any more. Once a question is open it stays open and answerable for
-the rest of the night, and players can go back and change any earlier
+the rest of the quiz, and players can go back and change any earlier
 answer as many times as they want. Present shows a live count of how many
 people have answered whatever's currently on screen, plus how many have
 submitted overall — but never a correct answer or anyone's individual
@@ -177,17 +182,17 @@ final review — players can still change their minds right up until they
 personally tap **Submit my final answers** on their own phone. Submitting
 is final for that player only; everyone else keeps going. If someone
 submits by mistake, the Host page has a **Let them back in** button while
-the night is still live (it's not shown on the shared screen).
+the quiz is still live (it's not shown on the shared screen).
 
-**End the night** finalises scores — anyone who answered something but
+**End the quiz** finalises scores — anyone who answered something but
 forgot to submit is included automatically, so a missed tap doesn't cost
 them their score. Only *then* does it become safe to show correct answers
 on the shared screen: Present moves into an **answer review**, where you
 can step through every question with the room, see each answer given, and
 use **Full / Half / None** to fix a free-text grade that came out wrong —
-scores update immediately, even after the night's closed. When you're
+scores update immediately, even after the quiz has closed. When you're
 ready, **Reveal the winners** runs the podium: third, then second, then
-first. Anyone who never submitted an answer that night doesn't get a score
+first. Anyone who never submitted an answer that quiz doesn't get a score
 row, so they won't show up on the leaderboard for it.
 
 If a phone's connection drops mid-quiz it recovers on its own — Play checks
@@ -213,11 +218,11 @@ Admin page → **People** → find them → **Deactivate**.
 They disappear from the sign-in list and the leaderboard, but their past
 scores are kept. **Reactivate** brings them back.
 
-**Adding a quiz night**
-Admin page → **Quiz nights** → pick a date, optional title, host → **Create**.
+**Adding a quiz**
+Admin page → **Quizzes** → pick a date, optional title, host → **Create**.
 Change the host any time by picking a new one from the dropdown in the table
-— it saves as soon as you pick. **Delete** removes a night that was created
-by mistake; once a night is closed it can no longer be deleted.
+— it saves as soon as you pick. **Delete** removes a quiz that was created
+by mistake; once a quiz is closed it can no longer be deleted.
 
 **Making changes to the site**
 Edit the file on GitHub (click the file → pencil icon → Commit), or re-upload it.

@@ -66,13 +66,13 @@ async function findWeeks() {
     ? await activeQuery
     : await activeQuery.eq("host_id", myPlayer.id);
 
-  if (error) return locked("Could not load quiz nights. Check the database setup.");
+  if (error) return locked("Could not load quizzes. Check the database setup.");
 
   let data = active || [];
 
   if (data.length === 0) {
     // Nothing to start or run right now - fall back to the most
-    // recently closed night, in case the host needs to pick back up
+    // recently closed quiz, in case the host needs to pick back up
     // reviewing answers or revealing the podium after a reload.
     const closedQuery = db
       .from("weeks")
@@ -88,8 +88,8 @@ async function findWeeks() {
 
   if (data.length === 0) {
     return locked(myPlayer.is_admin
-      ? "No quiz night is ready to present right now."
-      : "You don't have a quiz night ready to present.");
+      ? "No quiz is ready to present right now."
+      : "You don't have a quiz ready to present.");
   }
 
   if (myPlayer.is_admin && data.length > 1) {
@@ -119,7 +119,7 @@ async function loadWeek(weekId) {
     .eq("id", weekId)
     .single();
 
-  if (error || !week) return locked("Could not load that quiz night.");
+  if (error || !week) return locked("Could not load that quiz.");
 
   currentWeek = week;
   if ($("week-switcher-field").hidden === false) $("week-switcher").value = weekId;
@@ -135,7 +135,7 @@ async function loadWeek(weekId) {
     $("tagline").textContent = week.title || "Live now";
     await enterLive();
   } else if (week.status === "closed") {
-    $("tagline").textContent = "Night's over";
+    $("tagline").textContent = "That's a wrap";
     await enterReview();
   }
 }
@@ -183,7 +183,7 @@ function stopAllTimers() {
    LIVE DRIVING SCREEN
    This is on the shared Teams screen. It never shows a correct
    answer or another player's response - that only ever happens
-   after the night is closed, in the review panel below.
+   after the quiz is closed, in the review panel below.
    ============================================================ */
 async function enterLive() {
   $("live-panel").hidden = false;
@@ -256,7 +256,7 @@ function renderLive() {
   $("present-next").disabled = atLatest && !next;
   $("present-next").textContent = atLatest && next ? `Open question ${next.q_number} (Space)` : "Next (Space)";
   $("live-hint").textContent = atLatest && !next
-    ? "That's every question — go back through with the room, then end the night when you're ready."
+    ? "That's every question — go back through with the room, then end the quiz when you're ready."
     : "";
 
   updateMeter();
@@ -315,10 +315,10 @@ function showLiveError(message) {
 }
 
 /* ============================================================
-   FINISHING THE NIGHT
+   FINISHING THE QUIZ
    ============================================================ */
 $("end-night-btn").addEventListener("click", async () => {
-  if (!confirm("End the night? Anyone who hasn't submitted yet will be finalised automatically.")) return;
+  if (!confirm("End the quiz? Anyone who hasn't submitted yet will be finalised automatically.")) return;
 
   const err = $("live-error");
   err.hidden = true;
@@ -332,13 +332,13 @@ $("end-night-btn").addEventListener("click", async () => {
 
   stopAllTimers();
   currentWeek.status = "closed";
-  $("tagline").textContent = "Night's over";
+  $("tagline").textContent = "That's a wrap";
   $("live-panel").hidden = true;
   await enterReview();
 });
 
 /* ============================================================
-   ANSWER REVIEW (after the night is closed - safe to show answers)
+   ANSWER REVIEW (after the quiz is closed - safe to show answers)
    ============================================================ */
 async function enterReview() {
   await reloadQuiz();

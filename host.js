@@ -11,7 +11,7 @@ let ballot = [];             // poll_options for currentWeek
 let results = null;          // poll_results, only fetched while polling
 let questions = [];          // draft state for the quiz builder
 let previewOpen = false;
-let submissionsTimer = null; // polls final-submission status while the night is live
+let submissionsTimer = null; // polls final-submission status while the quiz is live
 
 /* ============================================================
    BOOT
@@ -63,12 +63,12 @@ async function findWeeks() {
     ? await query
     : await query.eq("host_id", myPlayer.id);
 
-  if (error) return locked("Could not load quiz nights. Check the database setup.");
+  if (error) return locked("Could not load quizzes. Check the database setup.");
 
   if (!data || data.length === 0) {
     return locked(myPlayer.is_admin
-      ? "No quiz nights need hosting right now. Create one from the admin page."
-      : "You are not hosting a quiz night at the moment.");
+      ? "No quizzes need hosting right now. Create one from the admin page."
+      : "You are not hosting a quiz at the moment.");
   }
 
   if (myPlayer.is_admin && data.length > 1) {
@@ -81,12 +81,12 @@ async function findWeeks() {
   if (presentLink) presentLink.hidden = false;
 
   show("view-host");
-  $("tagline").textContent = "Your quiz night";
+  $("tagline").textContent = "Your quiz";
   await loadWeek(data[0].id);
 }
 
 $("week-switcher").addEventListener("change", (e) => {
-  if (questions.some((q) => !q.saved) && !confirm("Switch nights? Any unsaved question changes will be lost.")) {
+  if (questions.some((q) => !q.saved) && !confirm("Switch quizzes? Any unsaved question changes will be lost.")) {
     e.target.value = currentWeek.id;
     return;
   }
@@ -107,7 +107,7 @@ async function loadWeek(weekId) {
     .single();
 
   if (error || !week) {
-    err.textContent = "Could not load that quiz night.";
+    err.textContent = "Could not load that quiz.";
     err.hidden = false;
     return;
   }
@@ -344,7 +344,7 @@ function renderBallotActions() {
     openBtn.hidden = true;
     closeBtn.hidden = true;
     if (currentWeek.status !== "closed") {
-      hint.textContent = "The ballot is closed for this night.";
+      hint.textContent = "The ballot is closed for this quiz.";
       hint.hidden = false;
     }
   }

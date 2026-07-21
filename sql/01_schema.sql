@@ -325,7 +325,7 @@ begin
 end;
 $$;
 
--- Host finalises the night: totals go into week_scores.
+-- Host finalises the quiz: totals go into week_scores.
 create or replace function close_week(p_week_id uuid)
 returns void
 language plpgsql security definer set search_path = public as $$

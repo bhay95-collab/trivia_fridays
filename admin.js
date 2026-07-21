@@ -27,7 +27,7 @@ let myPlayerId = null;
 
     myPlayerId = me.id;
     show("view-admin");
-    $("tagline").textContent = "People and quiz nights";
+    $("tagline").textContent = "People and quizzes";
     $("whoami-name").textContent = me.display_name;
 
     const hostLink = $("nav-host");
@@ -167,7 +167,7 @@ $("people-rows").addEventListener("click", async (e) => {
 });
 
 /* ============================================================
-   QUIZ NIGHTS
+   QUIZZES
    ============================================================ */
 async function loadWeeks() {
   const err = $("weeks-error");
@@ -197,7 +197,7 @@ function renderWeeks(weeks) {
         <button class="btn btn-small" data-action="delete-week" data-id="${w.id}" data-date="${w.quiz_date}"
           ${w.status === "closed" ? "hidden" : ""}>Delete</button>
       </td>
-    </tr>`).join("") || `<tr><td colspan="5" class="table-empty">No quiz nights yet.</td></tr>`;
+    </tr>`).join("") || `<tr><td colspan="5" class="table-empty">No quizzes yet.</td></tr>`;
 
   document.querySelectorAll(".week-host-select").forEach((sel) => fillHostSelect(sel, sel.dataset.selected));
 }

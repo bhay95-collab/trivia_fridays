@@ -82,7 +82,7 @@ async function loadPoll() {
     .neq("status", "closed")
     .order("quiz_date");
 
-  if (error) return locked("Could not load quiz nights. Check the database setup.");
+  if (error) return locked("Could not load quizzes. Check the database setup.");
 
   const polling = (weeks || []).find((w) => w.status === "polling");
   if (!polling) {
@@ -90,14 +90,14 @@ async function loadPoll() {
     if (hosting) {
       locked(`No poll is open yet. You're hosting ${fmtDate(hosting.quiz_date)} — build your ballot on the host page.`);
     } else {
-      locked("No poll is open right now. Check back closer to the next quiz.");
+      locked("No poll is open right now. Check back closer to Friday.");
     }
     return;
   }
 
   currentWeek = polling;
   isHost = polling.host_id === myPlayerId;
-  $("tagline").textContent = polling.title ? `Vote: ${polling.title}` : "Vote for this week's topic";
+  $("tagline").textContent = polling.title ? `Vote: ${polling.title}` : "Vote for Friday's topic";
   $("host-note").hidden = !isHost;
   show("view-poll");
 

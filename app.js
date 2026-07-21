@@ -281,7 +281,7 @@ function renderPodium(top) {
         <span class="medal">${["1st", "2nd", "3rd"][i]}</span>
         <span class="who">${esc(r.display_name)}</span>
         <span class="pts">${fmt(r.total_points)}</span>
-        <span class="sub">${r.weeks_played} nights</span>
+        <span class="sub">${r.weeks_played} quizzes</span>
       </div>`;
   }).join("");
 }
@@ -292,7 +292,7 @@ function renderRest(rows, meSlug) {
         style="animation-delay:${0.6 + i * 0.04}s">
       <span class="rank">${ordinal(r.rank)}</span>
       <span class="name">${esc(r.display_name)}</span>
-      <span class="played">${r.weeks_played} nights</span>
+      <span class="played">${r.weeks_played} quizzes</span>
       <span class="score">${fmt(r.total_points)}</span>
     </li>`).join("");
 }
@@ -304,7 +304,7 @@ function renderSpoon(ranked) {
   const el = $("spoon");
   el.hidden = false;
   el.innerHTML = `<b>Wooden Spoon:</b> ${esc(last.display_name)} — ${fmt(last.total_points)} points
-    across ${last.weeks_played} nights. There is nowhere to go but up.`;
+    across ${last.weeks_played} quizzes. There is nowhere to go but up.`;
 }
 
 /* ============================================================

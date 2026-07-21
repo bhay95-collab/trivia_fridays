@@ -49,14 +49,14 @@
     <div class="marquee-card">
       <h2 class="card-title" id="ready-heading">Ready when you are</h2>
       <p class="hint" id="ready-meta"></p>
-      <button type="button" class="btn btn-primary" id="start-week-btn">Start the night</button>
+      <button type="button" class="btn btn-primary" id="start-week-btn">Start the quiz</button>
       <p class="error" id="ready-error" hidden></p>
     </div>
   </section>
 
   <!-- live driving screen - this is what the room sees on Teams.
        Nothing here ever shows a correct answer or another player's
-       response - that only happens once the night is closed. -->
+       response - that only happens once the quiz is closed. -->
   <section id="live-panel" hidden>
     <div class="play-nav">
       <button type="button" class="btn btn-small" id="present-prev">&larr; Prev</button>
@@ -78,12 +78,12 @@
     <section class="panel" id="finish-panel">
       <h2 class="panel-title">Finishing up</h2>
       <p class="hint" id="submitted-meta"></p>
-      <button type="button" class="btn btn-small" id="end-night-btn">End the night</button>
+      <button type="button" class="btn btn-small" id="end-night-btn">End the quiz</button>
       <p class="error" id="live-error" hidden></p>
     </section>
   </section>
 
-  <!-- after the night: safe to show answers and review together -->
+  <!-- after the quiz: safe to show answers and review together -->
   <section id="review-panel" hidden>
     <section class="panel">
       <h2 class="panel-title">Answer review</h2>
