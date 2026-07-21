@@ -11,6 +11,7 @@ let ballot = [];             // poll_options for currentWeek
 let results = null;          // poll_results, only fetched while polling
 let questions = [];          // draft state for the quiz builder
 let previewOpen = false;
+let submissionsTimer = null; // polls final-submission status while the night is live
 
 /* ============================================================
    BOOT
@@ -129,9 +130,52 @@ async function loadWeek(weekId) {
 
   $("questions-locked-hint").hidden = canEditQuestions();
 
+  if (submissionsTimer) clearInterval(submissionsTimer);
+  submissionsTimer = null;
+  $("submissions-panel").hidden = week.status !== "live";
+  if (week.status === "live") {
+    await loadSubmissions();
+    submissionsTimer = setInterval(loadSubmissions, 4000);
+  }
+
   await Promise.all([loadSuggestions(), loadBallot(), loadQuestions()]);
   renderBallotActions();
 }
+
+async function loadSubmissions() {
+  const { data, error } = await db.rpc("host_submissions", { p_week_id: currentWeek.id });
+  if (error) {
+    $("submissions-list").innerHTML = `<li class="table-empty">Could not load submissions.</li>`;
+    return;
+  }
+
+  $("submissions-list").innerHTML = (data || []).map((s) => `
+    <li>
+      <span class="suggestion-topic">${esc(s.display_name)}</span>
+      <button class="btn btn-small" data-action="reopen-submission" data-id="${s.player_id}">Let them back in</button>
+    </li>`).join("") || `<li class="table-empty">Nobody yet.</li>`;
+}
+
+$("submissions-list").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action='reopen-submission']");
+  if (!btn) return;
+
+  const err = $("host-error");
+  err.hidden = true;
+
+  const { error } = await db.rpc("host_reopen_submission", {
+    p_week_id: currentWeek.id,
+    p_player_id: btn.dataset.id,
+  });
+
+  if (error) {
+    err.textContent = error.message;
+    err.hidden = false;
+    return;
+  }
+
+  await loadSubmissions();
+});
 
 function canEditQuestions() {
   return currentWeek.status !== "live" && currentWeek.status !== "closed";

@@ -39,12 +39,19 @@
 <!-- ================= PLAY ================= -->
 <section id="view-play" class="view play-view" hidden>
 
+  <!-- waiting for the first question -->
   <div id="waiting-block" hidden>
     <p class="hint" id="waiting-message">Waiting for the host…</p>
   </div>
 
-  <div id="question-block" hidden>
-    <p class="play-progress" id="play-progress"></p>
+  <!-- browsing and answering open questions -->
+  <div id="browse-block" hidden>
+    <div class="play-nav">
+      <button type="button" class="btn btn-small" id="play-prev">&larr; Prev</button>
+      <span class="play-progress" id="play-progress"></span>
+      <button type="button" class="btn btn-small" id="play-next">Next &rarr;</button>
+    </div>
+
     <h2 class="play-prompt" id="play-prompt"></h2>
 
     <div class="poll-options" id="mc-options" hidden></div>
@@ -54,21 +61,23 @@
         <span>Your answer</span>
         <input id="text-answer-input" type="text" autocomplete="off">
       </label>
-      <button type="submit" class="btn btn-primary">Submit</button>
+      <button type="submit" class="btn btn-primary">Save answer</button>
     </form>
 
+    <p class="hint" id="answer-status"></p>
     <p class="error" id="play-error" hidden></p>
+
+    <div class="submit-bar">
+      <p class="hint" id="answered-count"></p>
+      <button type="button" class="btn btn-primary" id="submit-final-btn">Submit my final answers</button>
+    </div>
   </div>
 
-  <div id="submitted-block" hidden>
-    <p class="hint locked-in">Answer locked in. Sit tight — the host will lock the question soon.</p>
-  </div>
-
-  <div id="reveal-block" hidden>
-    <p class="play-progress" id="reveal-progress"></p>
-    <h2 class="play-prompt" id="reveal-prompt"></h2>
-    <p class="reveal-answer" id="reveal-answer"></p>
-    <p class="reveal-verdict" id="reveal-verdict"></p>
+  <!-- after this player has submitted -->
+  <div id="results-block" hidden>
+    <h2 class="card-title">Your results</h2>
+    <p class="hint" id="results-total"></p>
+    <ol class="results-list" id="results-list"></ol>
   </div>
 
   <div class="panel" id="standings-panel" hidden>
@@ -76,10 +85,11 @@
     <ol class="rankings" id="play-standings"></ol>
   </div>
 
+  <!-- the night ended and this player never answered anything -->
   <div id="over-block" hidden class="card-stage">
     <div class="marquee-card">
       <h2 class="card-title">That's the night!</h2>
-      <p class="hint">Head to the leaderboard to see the final standings.</p>
+      <p class="hint">You didn't submit any answers this week. Check the leaderboard for the standings.</p>
       <a class="btn btn-primary" href="index.html">Leaderboard</a>
     </div>
   </div>

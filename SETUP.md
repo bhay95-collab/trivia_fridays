@@ -52,13 +52,18 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 **1.9 Add the live quiz night functions.**
 - **SQL Editor** → **New query**
 - Open `sql/07_live_functions.sql`, copy the whole file, paste, **Run**
-- This powers the Play and Present pages — starting the night, opening and locking questions, live standings, and turns on Realtime for the `questions` table so phones update instantly. Also safe to re-run any time.
+- This powers the Play and Present pages — starting the night, opening questions, live standings, and turns on Realtime for the `questions` table so phones update instantly. Also safe to re-run any time.
 
-**1.10 Check it worked.**
+**1.10 Add changeable answers and final submission.**
+- **SQL Editor** → **New query**
+- Open `sql/08_final_submission.sql`, copy the whole file, paste, **Run**
+- This lets players change an answer any time before they personally submit, and moves the answer reveal and host override panel to after the night ends. Also safe to re-run any time.
+
+**1.11 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 21 people. Benjamin Hay on top with 54.
 
-**1.11 Grab your two keys.**
+**1.12 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 
@@ -153,21 +158,31 @@ room sees. Everyone else opens **Play** on their phone; it finds the live
 quiz on its own, no code to type. When you're ready, **Start the night** on
 Present.
 
-From there: open a question (or press **Space**), read it aloud, wait for
-the room, then **Lock** (or press Space again) once enough people have
-answered — there's a live count so you're not guessing. Locking reveals the
-correct answer to everyone and moves standings forward; nothing about a
-question is ever visible to players until you open it, and nobody's score
-changes until you lock it. Locked a question too soon? **Reopen this
-question** brings it back before you move on.
+From there: open a question (or press **Space**), read it aloud, and move
+to the next one whenever you like — there's no lock-and-reveal step per
+question any more. Once a question is open it stays open and answerable for
+the rest of the night, and players can go back and change any earlier
+answer as many times as they want. Present shows a live count of how many
+people have answered whatever's currently on screen, plus how many have
+submitted overall — but never a correct answer or anyone's individual
+response, since that screen is shared with the whole room.
 
-Once it's locked, every answer for that question appears underneath with
-**Full / Half / None** buttons — free text grading is occasionally wrong,
-and you have the final say. Scores update immediately.
+Once every question has been opened, go back through them together as a
+final review — players can still change their minds right up until they
+personally tap **Submit my final answers** on their own phone. Submitting
+is final for that player only; everyone else keeps going. If someone
+submits by mistake, the Host page has a **Let them back in** button while
+the night is still live (it's not shown on the shared screen).
 
-After the last question, **End the night** finalises the scores, then
-**Reveal the winners** runs the podium: third, then second, then first.
-Anyone who didn't answer a single question that night doesn't get a score
+**End the night** finalises scores — anyone who answered something but
+forgot to submit is included automatically, so a missed tap doesn't cost
+them their score. Only *then* does it become safe to show correct answers
+on the shared screen: Present moves into an **answer review**, where you
+can step through every question with the room, see each answer given, and
+use **Full / Half / None** to fix a free-text grade that came out wrong —
+scores update immediately, even after the night's closed. When you're
+ready, **Reveal the winners** runs the podium: third, then second, then
+first. Anyone who never submitted an answer that night doesn't get a score
 row, so they won't show up on the leaderboard for it.
 
 If a phone's connection drops mid-quiz it recovers on its own — Play checks

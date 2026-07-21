@@ -446,19 +446,10 @@ body{
 
 .text-answer-form .field{ margin-bottom:1rem; }
 
-.locked-in{ text-align:center; }
-
 .reveal-answer{
   text-align:center; font-size:1.1rem; color:var(--gold); font-weight:700;
   margin:0 0 .6rem;
 }
-.reveal-verdict{
-  text-align:center; font-family:"JetBrains Mono", monospace; font-size:1.3rem;
-  margin:0 0 1.8rem;
-}
-.reveal-verdict.is-correct{ color:var(--cyan); text-shadow:var(--glow-c); }
-.reveal-verdict.is-partial{ color:var(--gold); }
-.reveal-verdict.is-wrong{ color:#FF7A7A; }
 
 /* ================= present (shared screen) ================= */
 .present-progress{
@@ -484,10 +475,6 @@ body{
 .present-option-key{
   font-family:"Bungee", sans-serif; color:var(--dim); font-size:1.1rem;
 }
-.present-option.is-correct{
-  border-color:rgba(34,227,224,.65); box-shadow:0 0 26px rgba(34,227,224,.28);
-}
-.present-option.is-correct .present-option-key{ color:var(--cyan); }
 
 .answer-meter{ max-width:520px; margin:0 auto 2rem; text-align:center; }
 .answer-meter-bar{
@@ -500,11 +487,6 @@ body{
 }
 .answer-meter-label{ color:var(--dim); font-size:.85rem; letter-spacing:.08em; }
 
-.present-reveal{ text-align:center; margin-bottom:1.5rem; }
-.present-reveal .reveal-answer{ font-size:1.3rem; }
-
-.present-controls{ justify-content:center; margin-bottom:1rem; }
-
 .override-list{ list-style:none; margin:0; padding:0; }
 .override-list li{
   display:flex; align-items:center; justify-content:space-between; gap:.8rem; flex-wrap:wrap;
@@ -516,3 +498,36 @@ body{
 .podium-card .podium{ margin-top:1.6rem; }
 .plinth.is-hidden{ opacity:0; transform:translateY(20px); }
 .plinth{ transition: opacity .5s ease, transform .5s ease; }
+
+/* ================= browse nav (play + present review) ================= */
+.play-nav{
+  display:flex; align-items:center; justify-content:space-between; gap:.8rem;
+  margin-bottom:1rem;
+}
+.play-nav .btn-small{ width:auto; flex:0 0 auto; }
+.play-nav .btn-small:disabled{ opacity:.3; }
+
+.review-prompt{ font-size:1.3rem; margin:0 0 1rem; }
+
+/* ================= submit bar (play) ================= */
+.submit-bar{
+  margin-top:1.6rem; padding-top:1.2rem; border-top:1px dashed rgba(255,241,220,.14);
+  text-align:center;
+}
+.submit-bar .hint{ margin:0 0 .8rem; }
+
+/* ================= results (play, after submitting) ================= */
+.results-list{ list-style:none; margin:1rem 0 0; padding:0; display:flex; flex-direction:column; gap:.8rem; }
+.results-item{
+  background: linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: var(--edge); border-left-width:4px; border-radius:14px; padding:1rem 1.1rem;
+}
+.results-item.is-correct{ border-left-color:var(--cyan); }
+.results-item.is-partial{ border-left-color:var(--gold); }
+.results-item.is-wrong{ border-left-color:#FF7A7A; }
+.results-prompt{ font-weight:700; margin:0 0 .4rem; }
+.results-mine, .results-correct{ font-size:.9rem; color:var(--dim); margin:0 0 .2rem; }
+.results-verdict{ font-family:"JetBrains Mono", monospace; font-size:.95rem; margin:.4rem 0 0; }
+.results-item.is-correct .results-verdict{ color:var(--cyan); }
+.results-item.is-partial .results-verdict{ color:var(--gold); }
+.results-item.is-wrong .results-verdict{ color:#FF7A7A; }

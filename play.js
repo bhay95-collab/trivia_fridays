@@ -10,8 +10,13 @@ let currentWeek = null;
 let channel = null;
 let pollTimer = null;
 let findTimer = null;
-let lastSig = null;
-let currentQuestionId = null;
+
+let questions = [];      // rows from live_state(), one per open question
+let submitted = false;
+let weekStatus = null;
+let currentIndex = 0;    // which question is being browsed right now
+let lastBrowseSig = null; // skip re-rendering the browse view when nothing actually changed,
+                           // so a poll cycle never wipes out a half-typed answer
 
 /* ============================================================
    BOOT
@@ -57,11 +62,14 @@ async function initNav(meId, isAdmin) {
 
   const hostLink = $("nav-host");
   const presentLink = $("nav-present");
-  if (isAdmin) {
-    if (hostLink) hostLink.hidden = false;
-    if (presentLink) presentLink.hidden = false;
-    return;
-  }
+
+  const setHosting = (hosting) => {
+    if (hostLink) hostLink.hidden = !hosting;
+    if (presentLink) presentLink.hidden = !hosting;
+  };
+
+  if (isAdmin) return setHosting(true);
+  if (!meId) return setHosting(false);
 
   const { data } = await db
     .from("weeks")
@@ -69,9 +77,7 @@ async function initNav(meId, isAdmin) {
     .eq("host_id", meId)
     .neq("status", "closed")
     .limit(1);
-  const hosting = !!(data && data.length);
-  if (hostLink) hostLink.hidden = !hosting;
-  if (presentLink) presentLink.hidden = !hosting;
+  setHosting(!!(data && data.length));
 }
 
 /* ============================================================
@@ -130,141 +136,184 @@ async function refreshState() {
   const { data, error } = await db.rpc("live_state", { p_week_id: currentWeek.id });
   if (error) return; // transient - the next poll or realtime event will retry
 
-  const state = Array.isArray(data) ? data[0] : data;
-  if (!state) return;
+  const rows = data || [];
+  const first = rows[0];
+  if (!first) return;
 
-  currentQuestionId = state.question_id;
+  weekStatus = first.week_status;
+  submitted = first.submitted;
+  questions = first.question_id ? rows : [];
 
-  if (state.week_status === "closed") {
-    stopLoop();
-  }
+  if (currentIndex >= questions.length) currentIndex = Math.max(0, questions.length - 1);
 
-  const sig = `${state.question_id}|${state.q_status}|${state.already_answered}`;
-  if (sig !== lastSig) {
-    lastSig = sig;
-    renderPlayArea(state);
-  }
+  render();
 
-  const showStandings = state.week_status !== "closed" && (!state.question_id || state.q_status === "locked");
-  if (showStandings) refreshStandings();
+  if (weekStatus === "closed" && !submitted && questions.length === 0) return; // nothing to stand for
+  refreshStandings();
+
+  if (weekStatus === "closed" && submitted) stopLoop(); // final result is in, nothing left to watch for
 }
 
-function renderPlayArea(state) {
-  ["waiting-block", "question-block", "submitted-block", "reveal-block", "over-block"].forEach((id) => {
-    $(id).hidden = true;
-  });
+function render() {
+  ["waiting-block", "browse-block", "results-block", "over-block"].forEach((id) => { $(id).hidden = true; });
   $("standings-panel").hidden = true;
 
-  if (state.week_status === "closed") {
+  if (weekStatus === "closed" && !submitted) {
     $("over-block").hidden = false;
     return;
   }
 
-  if (!state.question_id) {
+  if (submitted) {
+    $("results-block").hidden = false;
+    $("standings-panel").hidden = false;
+    renderResults();
+    return;
+  }
+
+  if (questions.length === 0) {
     $("waiting-block").hidden = false;
-    $("waiting-message").textContent = state.total_questions
-      ? "Waiting for the next question…"
-      : "Waiting for the host to start…";
+    $("waiting-message").textContent = "Waiting for the host to open the first question…";
     $("standings-panel").hidden = false;
     return;
   }
 
-  if (state.q_status === "open" && !state.already_answered) {
-    $("question-block").hidden = false;
-    $("play-progress").textContent = `Question ${state.q_number} of ${state.total_questions}`;
-    $("play-prompt").textContent = state.prompt;
-    $("play-error").hidden = true;
-    renderAnswerInput(state);
-    return;
-  }
+  $("browse-block").hidden = false;
+  $("standings-panel").hidden = false;
 
-  if (state.q_status === "open" && state.already_answered) {
-    $("submitted-block").hidden = false;
-    return;
-  }
-
-  if (state.q_status === "locked") {
-    $("reveal-block").hidden = false;
-    $("standings-panel").hidden = false;
-    $("reveal-progress").textContent = `Question ${state.q_number} of ${state.total_questions}`;
-    $("reveal-prompt").textContent = state.prompt;
-    renderReveal(state);
+  const sig = browseSig();
+  if (sig !== lastBrowseSig) {
+    lastBrowseSig = sig;
+    renderBrowse();
   }
 }
 
-function renderAnswerInput(state) {
+function browseSig() {
+  return `${currentIndex}|${questions.map((q) => `${q.question_id}:${q.my_answer || ""}`).join(",")}`;
+}
+
+/* ============================================================
+   BROWSING AND ANSWERING
+   ============================================================ */
+function renderBrowse() {
+  const q = questions[currentIndex];
+
+  $("play-progress").textContent = `Question ${q.q_number} of ${q.total_questions}`;
+  $("play-prev").disabled = currentIndex === 0;
+  $("play-next").disabled = currentIndex === questions.length - 1;
+
+  $("play-prompt").textContent = q.prompt;
+  $("play-error").hidden = true;
+
   const mc = $("mc-options");
   const form = $("text-answer-form");
 
-  if (state.q_type === "mc") {
+  if (q.q_type === "mc") {
     mc.hidden = false;
     form.hidden = true;
-    mc.innerHTML = (state.options || []).map((o) => `
-      <button type="button" class="poll-card" data-key="${esc(o.key)}">
+    mc.innerHTML = (q.options || []).map((o) => `
+      <button type="button" class="poll-card ${o.key === q.my_answer ? "is-mine" : ""}" data-key="${esc(o.key)}">
         <span class="poll-card-topic">${esc(o.text)}</span>
       </button>`).join("");
   } else {
     mc.hidden = true;
     form.hidden = false;
-    $("text-answer-input").value = "";
+    $("text-answer-input").value = q.my_answer || "";
   }
+
+  $("answer-status").textContent = q.my_answer
+    ? "You've answered this one — change it any time before you submit."
+    : "Not answered yet.";
+
+  const answeredCount = questions.filter((x) => x.my_answer).length;
+  $("answered-count").textContent = `${answeredCount} of ${questions.length} answered so far`;
 }
 
-function renderReveal(state) {
-  let answerText;
-  if (state.q_type === "mc") {
-    const correctOpt = (state.options || []).find((o) => o.key === state.correct_key);
-    answerText = correctOpt ? `${state.correct_key}. ${correctOpt.text}` : state.correct_key || "—";
-  } else {
-    answerText = state.correct_text || "—";
-  }
-  $("reveal-answer").textContent = `Correct answer: ${answerText}`;
+$("play-prev").addEventListener("click", () => {
+  if (currentIndex > 0) { currentIndex--; forceRenderBrowse(); }
+});
+$("play-next").addEventListener("click", () => {
+  if (currentIndex < questions.length - 1) { currentIndex++; forceRenderBrowse(); }
+});
 
-  const v = $("reveal-verdict");
-  if (!state.already_answered) {
-    v.textContent = "You didn't answer this one.";
-    v.className = "reveal-verdict is-wrong";
-  } else if (state.my_verdict === "correct") {
-    v.textContent = `Full marks — ${fmtPoints(state.my_points)} pts`;
-    v.className = "reveal-verdict is-correct";
-  } else if (state.my_verdict === "partial") {
-    v.textContent = `Half marks — ${fmtPoints(state.my_points)} pts`;
-    v.className = "reveal-verdict is-partial";
-  } else {
-    v.textContent = "No marks this time.";
-    v.className = "reveal-verdict is-wrong";
-  }
+function forceRenderBrowse() {
+  lastBrowseSig = browseSig();
+  renderBrowse();
 }
 
-/* ============================================================
-   ANSWERING
-   ============================================================ */
 $("mc-options").addEventListener("click", (e) => {
   const btn = e.target.closest(".poll-card");
   if (!btn) return;
-  submitAnswer(btn.dataset.key);
+  saveAnswer(btn.dataset.key);
 });
 
 $("text-answer-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const val = $("text-answer-input").value.trim();
   if (!val) return;
-  submitAnswer(val);
+  saveAnswer(val);
 });
 
-async function submitAnswer(answer) {
+async function saveAnswer(answer) {
+  const q = questions[currentIndex];
   const err = $("play-error");
   err.hidden = true;
 
-  const { error } = await db.rpc("submit_answer", { p_question_id: currentQuestionId, p_answer: answer });
+  const { error } = await db.rpc("submit_answer", { p_question_id: q.question_id, p_answer: answer });
   if (error) {
     err.textContent = error.message;
     err.hidden = false;
     return;
   }
 
-  lastSig = null; // force the next refresh to re-render even if the signature looks unchanged
+  q.my_answer = answer;
+  forceRenderBrowse();
+}
+
+/* ============================================================
+   FINAL SUBMISSION
+   ============================================================ */
+$("submit-final-btn").addEventListener("click", async () => {
+  const unanswered = questions.length - questions.filter((x) => x.my_answer).length;
+  const warning = unanswered > 0
+    ? `You still have ${unanswered} unanswered. Submit anyway? You can't change any answer after this.`
+    : "Submit your final answers? You can't change any answer after this.";
+  if (!confirm(warning)) return;
+
+  const err = $("play-error");
+  err.hidden = true;
+
+  const { error } = await db.rpc("submit_final_answers", { p_week_id: currentWeek.id });
+  if (error) {
+    err.textContent = error.message;
+    err.hidden = false;
+    return;
+  }
+
   await refreshState();
+});
+
+function renderResults() {
+  const total = questions.reduce((sum, q) => sum + (Number(q.my_points) || 0), 0);
+  $("results-total").textContent = `${fmtPoints(total)} ${Number(total) === 1 ? "point" : "points"}`;
+
+  $("results-list").innerHTML = questions.map((q) => {
+    const mine = q.q_type === "mc"
+      ? (q.options || []).find((o) => o.key === q.my_answer)?.text || (q.my_answer ? q.my_answer : null)
+      : q.my_answer;
+    const correct = q.q_type === "mc"
+      ? (q.options || []).find((o) => o.key === q.correct_key)?.text || q.correct_key
+      : q.correct_text;
+    const verdict = q.my_answer ? (q.my_verdict || "wrong") : "wrong";
+    const verdictLabel = !q.my_answer ? "Didn't answer" : verdict === "correct" ? "Full marks" : verdict === "partial" ? "Half marks" : "No marks";
+
+    return `
+      <li class="results-item is-${verdict}">
+        <p class="results-prompt">Q${q.q_number}. ${esc(q.prompt)}</p>
+        <p class="results-mine">Your answer: ${mine ? esc(mine) : "—"}</p>
+        <p class="results-correct">Correct answer: ${esc(correct)}</p>
+        <p class="results-verdict">${verdictLabel} — ${fmtPoints(q.my_points || 0)} pts</p>
+      </li>`;
+  }).join("");
 }
 
 /* ============================================================

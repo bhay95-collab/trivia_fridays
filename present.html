@@ -54,9 +54,16 @@
     </div>
   </section>
 
-  <!-- live driving screen -->
+  <!-- live driving screen - this is what the room sees on Teams.
+       Nothing here ever shows a correct answer or another player's
+       response - that only happens once the night is closed. -->
   <section id="live-panel" hidden>
-    <p class="present-progress" id="present-progress"></p>
+    <div class="play-nav">
+      <button type="button" class="btn btn-small" id="present-prev">&larr; Prev</button>
+      <span class="present-progress" id="present-progress"></span>
+      <button type="button" class="btn btn-small" id="present-next">Next &rarr;</button>
+    </div>
+
     <h1 class="present-prompt" id="present-prompt"></h1>
 
     <div class="present-options" id="present-options" hidden></div>
@@ -66,39 +73,38 @@
       <p class="answer-meter-label" id="answer-meter-label"></p>
     </div>
 
-    <div class="present-reveal" id="present-reveal" hidden>
-      <p class="reveal-answer" id="present-answer"></p>
-    </div>
-
-    <div class="row-actions present-controls">
-      <button type="button" class="btn btn-primary" id="lock-btn" hidden>Lock (Space)</button>
-      <button type="button" class="btn btn-primary" id="next-btn" hidden>Next question (Space)</button>
-      <button type="button" class="btn btn-small" id="reopen-btn" hidden>Reopen this question</button>
-    </div>
-
     <p class="hint" id="live-hint"></p>
 
-    <!-- override panel -->
-    <section class="panel" id="override-panel" hidden>
-      <h2 class="panel-title">Answers</h2>
-      <ul class="override-list" id="override-list"></ul>
-    </section>
-
-    <section class="panel">
+    <section class="panel" id="finish-panel">
       <h2 class="panel-title">Finishing up</h2>
+      <p class="hint" id="submitted-meta"></p>
       <button type="button" class="btn btn-small" id="end-night-btn">End the night</button>
       <p class="error" id="live-error" hidden></p>
     </section>
   </section>
 
-  <!-- podium reveal -->
-  <section id="podium-panel" hidden class="card-stage">
-    <div class="marquee-card podium-card">
-      <h2 class="card-title">That's a wrap</h2>
-      <button type="button" class="btn btn-primary" id="reveal-podium-btn">Reveal the winners</button>
-      <div class="podium" id="present-podium"></div>
-      <ol class="rankings" id="present-rest"></ol>
-    </div>
+  <!-- after the night: safe to show answers and review together -->
+  <section id="review-panel" hidden>
+    <section class="panel">
+      <h2 class="panel-title">Answer review</h2>
+      <div class="play-nav">
+        <button type="button" class="btn btn-small" id="review-prev">&larr; Prev</button>
+        <span class="present-progress" id="review-progress"></span>
+        <button type="button" class="btn btn-small" id="review-next">Next &rarr;</button>
+      </div>
+      <p class="present-prompt review-prompt" id="review-prompt"></p>
+      <p class="reveal-answer" id="review-answer"></p>
+      <ul class="override-list" id="override-list"></ul>
+    </section>
+
+    <section class="card-stage" id="podium-panel">
+      <div class="marquee-card podium-card">
+        <h2 class="card-title">That's a wrap</h2>
+        <button type="button" class="btn btn-primary" id="reveal-podium-btn">Reveal the winners</button>
+        <div class="podium" id="present-podium"></div>
+        <ol class="rankings" id="present-rest"></ol>
+      </div>
+    </section>
   </section>
 
 </section>

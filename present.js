@@ -8,9 +8,11 @@ const $ = (id) => document.getElementById(id);
 let myPlayer = null;
 let currentWeek = null;   // { id, quiz_date, title, status, host_id, topic }
 let quiz = [];             // host_quiz() rows for currentWeek
-let finalStandings = [];   // captured once, right after close_week()
+let viewIndex = 0;         // which opened question is showing on the shared screen
+let reviewIndex = 0;       // which question is showing in the post-close review
+let finalStandings = [];
 let channel = null;
-let liveTicker = null;
+let meterTicker = null;
 let fallbackTimer = null;
 
 /* ============================================================
@@ -54,19 +56,37 @@ function show(id) {
    WHICH WEEK
    ============================================================ */
 async function findWeeks() {
-  const query = db
+  const activeQuery = db
     .from("weeks")
     .select("id, quiz_date, title, status")
     .in("status", ["building", "live"])
     .order("quiz_date");
 
-  const { data, error } = myPlayer.is_admin
-    ? await query
-    : await query.eq("host_id", myPlayer.id);
+  const { data: active, error } = myPlayer.is_admin
+    ? await activeQuery
+    : await activeQuery.eq("host_id", myPlayer.id);
 
   if (error) return locked("Could not load quiz nights. Check the database setup.");
 
-  if (!data || data.length === 0) {
+  let data = active || [];
+
+  if (data.length === 0) {
+    // Nothing to start or run right now - fall back to the most
+    // recently closed night, in case the host needs to pick back up
+    // reviewing answers or revealing the podium after a reload.
+    const closedQuery = db
+      .from("weeks")
+      .select("id, quiz_date, title, status")
+      .eq("status", "closed")
+      .order("quiz_date", { ascending: false })
+      .limit(1);
+    const { data: closed } = myPlayer.is_admin
+      ? await closedQuery
+      : await closedQuery.eq("host_id", myPlayer.id);
+    data = closed || [];
+  }
+
+  if (data.length === 0) {
     return locked(myPlayer.is_admin
       ? "No quiz night is ready to present right now."
       : "You don't have a quiz night ready to present.");
@@ -106,7 +126,7 @@ async function loadWeek(weekId) {
 
   $("ready-panel").hidden = true;
   $("live-panel").hidden = true;
-  $("podium-panel").hidden = true;
+  $("review-panel").hidden = true;
 
   if (week.status === "building") {
     $("tagline").textContent = "Ready to start";
@@ -114,6 +134,9 @@ async function loadWeek(weekId) {
   } else if (week.status === "live") {
     $("tagline").textContent = week.title || "Live now";
     await enterLive();
+  } else if (week.status === "closed") {
+    $("tagline").textContent = "Night's over";
+    await enterReview();
   }
 }
 
@@ -148,179 +171,142 @@ $("start-week-btn").addEventListener("click", async () => {
 });
 
 function stopAllTimers() {
-  if (liveTicker) clearInterval(liveTicker);
+  if (meterTicker) clearInterval(meterTicker);
   if (fallbackTimer) clearInterval(fallbackTimer);
   if (channel) db.removeChannel(channel);
-  liveTicker = null;
+  meterTicker = null;
   fallbackTimer = null;
   channel = null;
 }
 
 /* ============================================================
    LIVE DRIVING SCREEN
+   This is on the shared Teams screen. It never shows a correct
+   answer or another player's response - that only ever happens
+   after the night is closed, in the review panel below.
    ============================================================ */
 async function enterLive() {
   $("live-panel").hidden = false;
-  $("podium-panel").hidden = true;
+  $("review-panel").hidden = true;
+  viewIndex = 0;
 
   await reloadQuiz();
+  renderLive();
 
   channel = db.channel(`present-${currentWeek.id}`)
     .on("postgres_changes",
       { event: "*", schema: "public", table: "questions", filter: `week_id=eq.${currentWeek.id}` },
-      reloadQuiz)
+      async () => { await reloadQuiz(); renderLive(); })
     .subscribe();
 
-  liveTicker = setInterval(tick, 2000);
-  fallbackTimer = setInterval(reloadQuiz, 5000);
+  fallbackTimer = setInterval(async () => { await reloadQuiz(); renderLive(); }, 5000);
+  meterTicker = setInterval(updateMeter, 2000);
+  updateMeter();
 }
 
 async function reloadQuiz() {
   const { data, error } = await db.rpc("host_quiz", { p_week_id: currentWeek.id });
-  if (error) return showLiveError(error.message);
+  if (error) { showLiveError(error.message); return; }
   quiz = data || [];
-  renderLive();
 }
 
-function currentQuestion() {
-  const reached = quiz.filter((q) => q.status !== "pending");
-  return reached[reached.length - 1] || null;
-}
-
-function nextPending() {
-  return quiz.find((q) => q.status === "pending") || null;
+function openedQuestions() {
+  return quiz.filter((q) => q.status !== "pending");
 }
 
 function renderLive() {
-  const cur = currentQuestion();
-  const next = nextPending();
+  const opened = openedQuestions();
+  const next = quiz.find((q) => q.status === "pending");
 
-  $("present-options").hidden = true;
-  $("present-reveal").hidden = true;
-  $("answer-meter").hidden = true;
-  $("lock-btn").hidden = true;
-  $("next-btn").hidden = true;
-  $("reopen-btn").hidden = true;
-  $("override-panel").hidden = true;
-  $("live-hint").textContent = "";
-
-  if (!cur) {
+  if (opened.length === 0) {
     $("present-progress").textContent = `Question 1 of ${quiz.length}`;
     $("present-prompt").textContent = "Ready for the first question.";
-    if (next) {
-      $("next-btn").hidden = false;
-      $("next-btn").textContent = "Open question 1 (Space)";
-    }
+    $("present-options").hidden = true;
+    $("answer-meter").hidden = true;
+    $("present-prev").disabled = true;
+    $("present-next").disabled = !next;
+    $("present-next").textContent = next ? "Open question 1 (Space)" : "Next (Space)";
+    $("live-hint").textContent = "";
     return;
   }
 
-  $("present-progress").textContent = `Question ${cur.q_number} of ${quiz.length}`;
-  $("present-prompt").textContent = cur.prompt;
+  if (viewIndex >= opened.length) viewIndex = opened.length - 1;
+  const q = opened[viewIndex];
 
-  if (cur.q_type === "mc") {
+  $("present-progress").textContent = `Question ${q.q_number} of ${quiz.length}`;
+  $("present-prompt").textContent = q.prompt;
+
+  if (q.q_type === "mc") {
     $("present-options").hidden = false;
-    $("present-options").innerHTML = (cur.options || []).map((o) => `
-      <div class="present-option" data-key="${esc(o.key)}">
+    $("present-options").innerHTML = (q.options || []).map((o) => `
+      <div class="present-option">
         <span class="present-option-key">${esc(o.key)}</span>
         <span>${esc(o.text)}</span>
       </div>`).join("");
+  } else {
+    $("present-options").hidden = true;
   }
 
-  if (cur.status === "open") {
-    $("answer-meter").hidden = false;
-    $("answer-meter-fill").style.width = "0%";
-    $("answer-meter-label").textContent = "";
-    $("lock-btn").hidden = false;
-    tick();
-  } else if (cur.status === "locked") {
-    $("present-reveal").hidden = false;
-    $("present-answer").textContent = `Correct answer: ${correctAnswerText(cur)}`;
-    markCorrectOption(cur);
+  $("answer-meter").hidden = false;
+  $("answer-meter-fill").style.width = "0%";
+  $("answer-meter-label").textContent = "";
 
-    $("reopen-btn").hidden = false;
-    if (next) {
-      $("next-btn").hidden = false;
-      $("next-btn").textContent = `Open question ${next.q_number} (Space)`;
-    } else {
-      $("live-hint").textContent = "That's the last question — end the night when you're ready.";
-    }
+  $("present-prev").disabled = viewIndex === 0;
+  const atLatest = viewIndex === opened.length - 1;
+  $("present-next").disabled = atLatest && !next;
+  $("present-next").textContent = atLatest && next ? `Open question ${next.q_number} (Space)` : "Next (Space)";
+  $("live-hint").textContent = atLatest && !next
+    ? "That's every question — go back through with the room, then end the night when you're ready."
+    : "";
 
-    $("override-panel").hidden = false;
-    loadOverridePanel(cur.id);
-  }
+  updateMeter();
 }
 
-function correctAnswerText(cur) {
-  if (cur.q_type === "mc") {
-    const opt = (cur.options || []).find((o) => o.key === cur.correct_key);
-    return opt ? `${cur.correct_key}. ${opt.text}` : cur.correct_key || "—";
-  }
-  return cur.correct_text || "—";
-}
+$("present-prev").addEventListener("click", () => {
+  if (viewIndex > 0) { viewIndex--; renderLive(); }
+});
 
-function markCorrectOption(cur) {
-  if (cur.q_type !== "mc") return;
-  document.querySelectorAll(".present-option").forEach((el) => {
-    el.classList.toggle("is-correct", el.dataset.key === cur.correct_key);
-  });
-}
+$("present-next").addEventListener("click", async () => {
+  const opened = openedQuestions();
+  if (viewIndex < opened.length - 1) { viewIndex++; renderLive(); return; }
 
-async function tick() {
-  if (!currentWeek || currentWeek.status !== "live") return;
-  const cur = currentQuestion();
-  if (!cur || cur.status !== "open") return;
-
-  const { data } = await db.rpc("host_live_state", { p_week_id: currentWeek.id });
-  const state = Array.isArray(data) ? data[0] : data;
-  if (!state || !state.question_id) return;
-
-  const pct = state.expected_count ? Math.round((state.answered_count / state.expected_count) * 100) : 0;
-  $("answer-meter-fill").style.width = `${Math.min(pct, 100)}%`;
-  $("answer-meter-label").textContent = `${state.answered_count} / ${state.expected_count} answered`;
-}
-
-/* ============================================================
-   CONTROLS
-   ============================================================ */
-async function lockCurrent() {
-  const cur = currentQuestion();
-  if (!cur || cur.status !== "open") return;
-  const { error } = await db.rpc("set_question_status", { p_question_id: cur.id, p_status: "locked" });
-  if (error) return showLiveError(error.message);
-  await reloadQuiz();
-}
-
-async function openNext() {
-  const cur = currentQuestion();
-  if (cur && cur.status === "open") return;
-  const next = nextPending();
+  const next = quiz.find((q) => q.status === "pending");
   if (!next) return;
+
   const { error } = await db.rpc("set_question_status", { p_question_id: next.id, p_status: "open" });
   if (error) return showLiveError(error.message);
-  await reloadQuiz();
-}
 
-$("lock-btn").addEventListener("click", lockCurrent);
-$("next-btn").addEventListener("click", openNext);
-
-$("reopen-btn").addEventListener("click", async () => {
-  const cur = currentQuestion();
-  if (!cur) return;
-  const { error } = await db.rpc("reopen_question", { p_question_id: cur.id });
-  if (error) return showLiveError(error.message);
   await reloadQuiz();
+  viewIndex = openedQuestions().length - 1;
+  renderLive();
 });
 
 document.addEventListener("keydown", (e) => {
   if (!currentWeek || currentWeek.status !== "live") return;
   if (e.code !== "Space" && e.key !== "Enter") return;
   if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) return;
-
   e.preventDefault();
-  const cur = currentQuestion();
-  if (cur && cur.status === "open") lockCurrent();
-  else openNext();
+  $("present-next").click();
 });
+
+async function updateMeter() {
+  if (!currentWeek || currentWeek.status !== "live") return;
+  const opened = openedQuestions();
+  const q = opened[viewIndex];
+
+  const { data } = await db.rpc("host_live_state", { p_week_id: currentWeek.id });
+  const state = Array.isArray(data) ? data[0] : data;
+  const expected = state?.expected_count || 0;
+
+  $("submitted-meta").textContent = `${state?.submitted_count || 0} of ${expected} submitted their final answers`;
+
+  if (!q) return;
+  const { count } = await db.from("responses").select("id", { count: "exact", head: true }).eq("question_id", q.id);
+  const answered = count || 0;
+  const pct = expected ? Math.round((answered / expected) * 100) : 0;
+  $("answer-meter-fill").style.width = `${Math.min(pct, 100)}%`;
+  $("answer-meter-label").textContent = `${answered} / ${expected} answered`;
+}
 
 function showLiveError(message) {
   const err = $("live-error");
@@ -329,8 +315,69 @@ function showLiveError(message) {
 }
 
 /* ============================================================
-   OVERRIDE PANEL
+   FINISHING THE NIGHT
    ============================================================ */
+$("end-night-btn").addEventListener("click", async () => {
+  if (!confirm("End the night? Anyone who hasn't submitted yet will be finalised automatically.")) return;
+
+  const err = $("live-error");
+  err.hidden = true;
+
+  const { error } = await db.rpc("close_week", { p_week_id: currentWeek.id });
+  if (error) {
+    err.textContent = error.message;
+    err.hidden = false;
+    return;
+  }
+
+  stopAllTimers();
+  currentWeek.status = "closed";
+  $("tagline").textContent = "Night's over";
+  $("live-panel").hidden = true;
+  await enterReview();
+});
+
+/* ============================================================
+   ANSWER REVIEW (after the night is closed - safe to show answers)
+   ============================================================ */
+async function enterReview() {
+  await reloadQuiz();
+  reviewIndex = 0;
+  $("review-panel").hidden = false;
+  $("reveal-podium-btn").hidden = false;
+  $("present-podium").innerHTML = "";
+  $("present-rest").innerHTML = "";
+  renderReview();
+}
+
+function renderReview() {
+  const q = quiz[reviewIndex];
+  if (!q) return;
+
+  $("review-progress").textContent = `Question ${q.q_number} of ${quiz.length}`;
+  $("review-prev").disabled = reviewIndex === 0;
+  $("review-next").disabled = reviewIndex === quiz.length - 1;
+  $("review-prompt").textContent = q.prompt;
+  $("review-answer").textContent = `Correct answer: ${correctAnswerText(q)}`;
+
+  loadOverridePanel(q.id);
+}
+
+$("review-prev").addEventListener("click", () => {
+  if (reviewIndex > 0) { reviewIndex--; renderReview(); }
+});
+$("review-next").addEventListener("click", () => {
+  if (reviewIndex < quiz.length - 1) { reviewIndex++; renderReview(); }
+});
+
+function correctAnswerText(q) {
+  if (q.q_type === "mc") {
+    const opt = (q.options || []).find((o) => o.key === q.correct_key);
+    return opt ? `${q.correct_key}. ${opt.text}` : q.correct_key || "—";
+  }
+  return q.correct_text || "—";
+}
+
 async function loadOverridePanel(questionId) {
   const { data, error } = await db
     .from("responses")
@@ -365,41 +412,16 @@ $("override-list").addEventListener("click", async (e) => {
   const { error } = await db.rpc("override_response", { p_response_id: btn.dataset.id, p_verdict: btn.dataset.verdict });
   if (error) return showLiveError(error.message);
 
-  const cur = currentQuestion();
-  if (cur) await loadOverridePanel(cur.id);
+  await loadOverridePanel(quiz[reviewIndex].id);
 });
 
 /* ============================================================
-   FINISHING THE NIGHT
+   PODIUM
    ============================================================ */
-$("end-night-btn").addEventListener("click", async () => {
-  if (!confirm("End the night? This locks in final scores and can't be undone.")) return;
-
-  const err = $("live-error");
-  err.hidden = true;
-
-  const { error } = await db.rpc("close_week", { p_week_id: currentWeek.id });
-  if (error) {
-    err.textContent = error.message;
-    err.hidden = false;
-    return;
-  }
-
+$("reveal-podium-btn").addEventListener("click", async () => {
+  $("reveal-podium-btn").hidden = true;
   const { data } = await db.rpc("live_standings", { p_week_id: currentWeek.id });
   finalStandings = data || [];
-
-  stopAllTimers();
-  currentWeek.status = "closed";
-  $("tagline").textContent = "Night's over";
-  $("live-panel").hidden = true;
-  $("podium-panel").hidden = false;
-  $("reveal-podium-btn").hidden = false;
-  $("present-podium").innerHTML = "";
-  $("present-rest").innerHTML = "";
-});
-
-$("reveal-podium-btn").addEventListener("click", () => {
-  $("reveal-podium-btn").hidden = true;
   revealPodium(finalStandings);
 });
 
