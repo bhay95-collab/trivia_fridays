@@ -12,7 +12,12 @@
 -- SLUG GENERATION
 -- "Emma O'Ryan" -> emma.oryan. Lower case, letters and spaces
 -- only, spaces become dots. Appends .2, .3... if taken.
+-- Dropped first: create or replace cannot rename a parameter, and
+-- an older copy of this function may already exist with a
+-- different parameter name.
 -- ============================================================
+drop function if exists make_slug(text);
+
 create or replace function make_slug(p_display_name text) returns text
 language plpgsql stable security definer set search_path = public as $$
 declare
