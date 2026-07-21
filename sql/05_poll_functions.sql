@@ -288,6 +288,26 @@ $$;
 
 -- Tally the votes, crown a winner, move the week to building.
 -- Ties are broken at random and the return value says so.
+create or replace function poll_results(p_week_id uuid)
+returns table(option_id uuid, topic text, votes bigint)
+language sql stable security definer set search_path = public as $$
+  select
+    o.id as option_id,
+    o.topic,
+    count(v.id) as votes
+  from poll_options o
+  left join poll_votes v on v.option_id = o.id and v.week_id = p_week_id
+  where o.week_id = p_week_id
+  group by o.id, o.topic
+  order by o.sort_order, o.topic
+$$;
+
+create or replace function my_vote(p_week_id uuid)
+returns uuid
+language sql stable security definer set search_path = public as $$
+  select option_id from poll_votes where week_id = p_week_id and player_id = me()
+$$;
+
 create or replace function host_close_poll(p_week_id uuid)
 returns table(winning_topic text, tied boolean)
 language plpgsql security definer set search_path = public as $$

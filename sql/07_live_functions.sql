@@ -87,7 +87,8 @@ returns table(
   correct_key       text,
   correct_text      text,
   my_verdict        text,
-  my_points         numeric
+  my_points         numeric,
+  media             jsonb
 )
 language plpgsql stable security definer set search_path = public as $$
 declare
@@ -119,7 +120,7 @@ begin
 
   if not found then
     return query select v_week_status, null::uuid, null::int, v_total, null::text, null::text, null::jsonb,
-                        null::numeric, null::text, null::boolean, null::text, null::text, null::text, null::numeric;
+                        null::numeric, null::text, null::boolean, null::text, null::text, null::text, null::numeric, null::jsonb;
     return;
   end if;
 
@@ -131,10 +132,28 @@ begin
       from responses r where r.question_id = q.id and r.player_id = v_me;
 
     return query select v_week_status, q.id, q.q_number, v_total, q.q_type, q.prompt, q.options, q.points, q.status,
-                        v_answered, k.correct_key, k.correct_text, v_verdict, v_points;
+                        v_answered, k.correct_key, k.correct_text, v_verdict, v_points,
+                        coalesce((select jsonb_agg(jsonb_build_object(
+                          'id', m.id,
+                          'media_type', m.media_type,
+                          'source_type', m.source_type,
+                          'url', m.url,
+                          'caption', m.caption,
+                          'sort_order', m.sort_order
+                        ) order by m.sort_order, m.created_at)
+                        from question_media m where m.question_id = q.id), '[]'::jsonb);
   else
     return query select v_week_status, q.id, q.q_number, v_total, q.q_type, q.prompt, q.options, q.points, q.status,
-                        v_answered, null::text, null::text, null::text, null::numeric;
+                        v_answered, null::text, null::text, null::text, null::numeric,
+                        coalesce((select jsonb_agg(jsonb_build_object(
+                          'id', m.id,
+                          'media_type', m.media_type,
+                          'source_type', m.source_type,
+                          'url', m.url,
+                          'caption', m.caption,
+                          'sort_order', m.sort_order
+                        ) order by m.sort_order, m.created_at)
+                        from question_media m where m.question_id = q.id), '[]'::jsonb);
   end if;
 end;
 $$;

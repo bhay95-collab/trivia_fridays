@@ -1,5 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+import { mediaRendererMarkup } from "./media-utils.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -235,6 +236,8 @@ function renderLive() {
 
   $("present-progress").textContent = `Question ${q.q_number} of ${quiz.length}`;
   $("present-prompt").textContent = q.prompt;
+  $("present-media").innerHTML = mediaRendererMarkup(q.media || []);
+  $("present-media").hidden = !(q.media || []).length;
 
   if (q.q_type === "mc") {
     $("present-options").hidden = false;

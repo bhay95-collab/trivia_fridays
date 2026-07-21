@@ -1,5 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+import { normalizeMediaEntry } from "./media-utils.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -436,6 +437,7 @@ function rowToDraft(row) {
     correctIndex: correctIndex >= 0 ? correctIndex : 0,
     correct_text: row.correct_text || "",
     alternates: row.alternates || [],
+    media: (row.media || []).map((item) => normalizeMediaEntry(item)),
     saved: true,
   };
 }
@@ -452,6 +454,7 @@ function newDraft() {
     correctIndex: 0,
     correct_text: "",
     alternates: [],
+    media: [],
     saved: false,
   };
 }
@@ -481,6 +484,16 @@ function syncCardFromDOM(clientId) {
     const altInputs = card.querySelectorAll(".q-alt");
     if (card.querySelector(".alt-rows")) q.alternates = [...altInputs].map((i) => i.value);
   }
+
+  const mediaRows = [...card.querySelectorAll(".media-row")];
+  q.media = mediaRows.map((row) => normalizeMediaEntry({
+    id: row.dataset.mediaId || null,
+    media_type: row.querySelector(".q-media-type").value,
+    source_type: row.querySelector(".q-media-source").value,
+    url: row.querySelector(".q-media-url").value,
+    caption: row.querySelector(".q-media-caption").value,
+    sort_order: Number(row.querySelector(".q-media-sort").value || 0),
+  }));
 }
 
 function renderQuestions() {
@@ -538,6 +551,16 @@ function questionCardHTML(q, index, canEdit, savedIndex, savedTotal) {
 
       ${isMC ? mcFieldsHTML(q, canEdit) : textFieldsHTML(q, canEdit)}
 
+      <div class="media-section">
+        <div class="panel-title-row">
+          <h3 class="panel-title panel-title-small">Media</h3>
+          ${canEdit ? `<button type="button" class="btn btn-small" data-action="add-media">Add media</button>` : ""}
+        </div>
+        <div class="media-rows">
+          ${(q.media || []).map((m, i) => mediaRowHTML(m, i, canEdit)).join("")}
+        </div>
+      </div>
+
       ${canEdit ? `
         <div class="row-actions question-card-save">
           <button type="button" class="btn btn-primary" data-action="save-question">Save question</button>
@@ -588,6 +611,42 @@ function textFieldsHTML(q, canEdit) {
   `;
 }
 
+function mediaRowHTML(media, index, canEdit) {
+  return `
+    <div class="media-row" data-media-id="${media.id || ""}">
+      <div class="question-card-row">
+        <label class="field field-narrow">
+          <span>Type</span>
+          <select class="q-media-type" ${canEdit ? "" : "disabled"}>
+            <option value="image" ${media.media_type === "image" ? "selected" : ""}>Image</option>
+            <option value="audio" ${media.media_type === "audio" ? "selected" : ""}>Audio</option>
+            <option value="video" ${media.media_type === "video" ? "selected" : ""}>Video</option>
+          </select>
+        </label>
+        <label class="field field-narrow">
+          <span>Source</span>
+          <select class="q-media-source" ${canEdit ? "" : "disabled"}>
+            <option value="url" ${media.source_type === "url" ? "selected" : ""}>URL</option>
+            <option value="upload" ${media.source_type === "upload" ? "selected" : ""}>Upload</option>
+          </select>
+        </label>
+        <label class="field field-narrow">
+          <span>Order</span>
+          <input type="number" class="q-media-sort" min="0" step="1" value="${Number(media.sort_order || index)}" ${canEdit ? "" : "disabled"}>
+        </label>
+      </div>
+      <label class="field">
+        <span>URL</span>
+        <input type="text" class="q-media-url" value="${esc(media.url || "")}" placeholder="https://..." ${canEdit ? "" : "disabled"}>
+      </label>
+      <label class="field">
+        <span>Caption</span>
+        <input type="text" class="q-media-caption" value="${esc(media.caption || "")}" placeholder="Optional caption" ${canEdit ? "" : "disabled"}>
+      </label>
+      ${canEdit ? `<button type="button" class="btn btn-small" data-action="remove-media">Remove</button>` : ""}
+    </div>`;
+}
+
 function renderPreview() {
   $("quiz-preview").hidden = !previewOpen;
   if (!previewOpen) return;
@@ -600,6 +659,7 @@ function renderPreview() {
       ${q.q_type === "mc"
         ? `<div class="preview-options">${q.options.map((o) => `<span class="preview-option">${esc(o.text || "…")}</span>`).join("")}</div>`
         : `<input class="preview-answer" disabled placeholder="Player types their answer here">`}
+      ${(q.media || []).length ? `<div class="preview-media">${(q.media || []).map((m) => `<span class="preview-media-tag">${esc(m.media_type || "media")}</span>`).join("")}</div>` : ""}
     </div>`).join("") || `<p class="hint">Nothing to preview yet.</p>`;
 }
 
@@ -649,7 +709,7 @@ $("questions-list").addEventListener("click", async (e) => {
   const clientId = card?.dataset.clientId;
   const action = btn.dataset.action;
 
-  if (["add-option", "remove-option", "add-alt", "remove-alt"].includes(action)) {
+  if (["add-option", "remove-option", "add-alt", "remove-alt", "add-media", "remove-media"].includes(action)) {
     syncCardFromDOM(clientId);
     const q = questions.find((x) => x.clientId === clientId);
 
@@ -669,6 +729,15 @@ $("questions-list").addEventListener("click", async (e) => {
     if (action === "remove-alt") {
       const i = Number(btn.closest(".alt-row").dataset.altIndex);
       q.alternates.splice(i, 1);
+    }
+    if (action === "add-media") {
+      q.media = q.media || [];
+      q.media.push(normalizeMediaEntry({ media_type: "image", source_type: "url", url: "", caption: "", sort_order: q.media.length }));
+    }
+    if (action === "remove-media") {
+      const row = btn.closest(".media-row");
+      const idx = Array.from(card.querySelectorAll(".media-row")).indexOf(row);
+      if (idx >= 0) q.media.splice(idx, 1);
     }
     q.saved = false;
     renderQuestions();
@@ -701,6 +770,7 @@ async function saveQuestion(clientId) {
     p_correct_key: q.q_type === "mc" ? String.fromCharCode(65 + q.correctIndex) : null,
     p_correct_text: q.q_type === "text" ? q.correct_text : null,
     p_alternates: q.q_type === "text" ? (q.alternates || []).map((a) => a.trim()).filter(Boolean) : [],
+    p_media: (q.media || []).map((m) => normalizeMediaEntry(m)),
   });
 
   if (error) {

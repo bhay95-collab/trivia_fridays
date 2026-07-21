@@ -13,6 +13,7 @@ drop view   if exists leaderboard cascade;
 drop table  if exists week_scores      cascade;
 drop table  if exists responses        cascade;
 drop table  if exists answer_keys      cascade;
+drop table  if exists question_media   cascade;
 drop table  if exists questions        cascade;
 drop table  if exists poll_votes       cascade;
 drop table  if exists poll_options     cascade;
@@ -113,6 +114,17 @@ create table answer_keys (
   correct_key  text,        -- for 'mc': the option key, e.g. "B"
   correct_text text,        -- for 'text': the main accepted answer
   alternates   text[] not null default '{}'  -- e.g. {'JFK','John F Kennedy'}
+);
+
+create table question_media (
+  id           uuid primary key default gen_random_uuid(),
+  question_id  uuid not null references questions(id) on delete cascade,
+  media_type   text not null check (media_type in ('audio','image','video')),
+  source_type  text not null default 'url' check (source_type in ('url','upload')),
+  url          text not null,
+  caption      text,
+  sort_order   int not null default 0,
+  created_at   timestamptz not null default now()
 );
 
 -- ============================================================

@@ -157,7 +157,8 @@ create or replace function host_save_question(
   p_options      jsonb default null,
   p_correct_key  text default null,
   p_correct_text text default null,
-  p_alternates   text[] default '{}'
+  p_alternates   text[] default '{}',
+  p_media        jsonb default '[]'::jsonb
 )
 returns table(id uuid, q_number int)
 language plpgsql security definer set search_path = public as $$
@@ -167,6 +168,7 @@ declare
   v_q_number       int;
   v_existing_week  uuid;
   v_keys           text[];
+  v_media_item     jsonb;
 begin
   if not is_host_of(p_week_id) then
     raise exception 'Only the host can edit questions.';
@@ -264,6 +266,24 @@ begin
   set correct_key  = excluded.correct_key,
       correct_text = excluded.correct_text,
       alternates   = excluded.alternates;
+
+  delete from question_media where question_id = v_id;
+  if p_media is not null and jsonb_typeof(p_media) = 'array' then
+    for v_media_item in select * from jsonb_array_elements(p_media)
+    loop
+      if coalesce(v_media_item->>'url', '') <> '' then
+        insert into question_media (question_id, media_type, source_type, url, caption, sort_order)
+        values (
+          v_id,
+          lower(coalesce(v_media_item->>'media_type', 'image')),
+          lower(coalesce(v_media_item->>'source_type', 'url')),
+          coalesce(v_media_item->>'url', ''),
+          coalesce(v_media_item->>'caption', ''),
+          coalesce((v_media_item->>'sort_order')::int, 0)
+        );
+      end if;
+    end loop;
+  end if;
 
   return query select v_id, v_q_number;
 end;
@@ -368,12 +388,22 @@ returns table(
   status       text,
   correct_key  text,
   correct_text text,
-  alternates   text[]
+  alternates   text[],
+  media        jsonb
 )
 language sql stable security definer set search_path = public as $$
   select
     q.id, q.q_number, q.q_type, q.prompt, q.options, q.points, q.status,
-    k.correct_key, k.correct_text, k.alternates
+    k.correct_key, k.correct_text, k.alternates,
+    coalesce((select jsonb_agg(jsonb_build_object(
+      'id', m.id,
+      'media_type', m.media_type,
+      'source_type', m.source_type,
+      'url', m.url,
+      'caption', m.caption,
+      'sort_order', m.sort_order
+    ) order by m.sort_order, m.created_at)
+    from question_media m where m.question_id = q.id), '[]'::jsonb) as media
   from questions q
   left join answer_keys k on k.question_id = q.id
   where q.week_id = p_week_id and is_host_of(p_week_id)

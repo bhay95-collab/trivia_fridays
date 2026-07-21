@@ -1,5 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
+import { mediaRendererMarkup } from "./media-utils.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -136,7 +137,7 @@ async function refreshState() {
   const { data, error } = await db.rpc("live_state", { p_week_id: currentWeek.id });
   if (error) return; // transient - the next poll or realtime event will retry
 
-  const rows = data || [];
+  const rows = (data || []).map((row) => ({ ...row, media: row.media || [] }));
   const first = rows[0];
   if (!first) return;
 
@@ -203,6 +204,8 @@ function renderBrowse() {
 
   $("play-prompt").textContent = q.prompt;
   $("play-error").hidden = true;
+  $("play-media").innerHTML = mediaRendererMarkup(q.media || []);
+  $("play-media").hidden = !(q.media || []).length;
 
   const mc = $("mc-options");
   const form = $("text-answer-form");
