@@ -76,6 +76,9 @@ async function findWeeks() {
       `<option value="${w.id}">${fmtDate(w.quiz_date)}${w.title ? " — " + esc(w.title) : ""}</option>`).join("");
   }
 
+  const presentLink = $("nav-present");
+  if (presentLink) presentLink.hidden = false;
+
   show("view-host");
   $("tagline").textContent = "Your quiz night";
   await loadWeek(data[0].id);

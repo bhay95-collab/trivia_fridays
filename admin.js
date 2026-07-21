@@ -32,6 +32,8 @@ let myPlayerId = null;
 
     const hostLink = $("nav-host");
     if (hostLink) hostLink.hidden = false; // admins can always reach the host page
+    const presentLink = $("nav-present");
+    if (presentLink) presentLink.hidden = false;
 
     await loadPeople();
     await loadWeeks();

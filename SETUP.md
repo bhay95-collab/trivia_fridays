@@ -1,9 +1,11 @@
-# Trivia Fridays — Stage 1 setup
+# Trivia Fridays — setup
 
-Stage 1 gives you: a live site, name + PIN login, and the season leaderboard
-with your four existing weeks already loaded.
+This gives you the whole site: name + PIN login, the season leaderboard,
+topic suggestions and the weekly poll, the host's quiz builder, and a full
+live quiz night on Play (phones) and Present (the shared screen) — start to
+finish, nothing left to wire up by hand.
 
-Follow in order. Roughly 30 minutes.
+Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 
 ---
 
@@ -47,11 +49,16 @@ Follow in order. Roughly 30 minutes.
 - Open `sql/06_quiz_functions.sql`, copy the whole file, paste, **Run**
 - This powers the Questions section on the host page — writing questions and answer keys, and grading. Also safe to re-run any time.
 
-**1.9 Check it worked.**
+**1.9 Add the live quiz night functions.**
+- **SQL Editor** → **New query**
+- Open `sql/07_live_functions.sql`, copy the whole file, paste, **Run**
+- This powers the Play and Present pages — starting the night, opening and locking questions, live standings, and turns on Realtime for the `questions` table so phones update instantly. Also safe to re-run any time.
+
+**1.10 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 21 people. Benjamin Hay on top with 54.
 
-**1.10 Grab your two keys.**
+**1.11 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 
@@ -81,7 +88,7 @@ Follow in order. Roughly 30 minutes.
 
 **3.3 Upload the files.**
 - On the empty repo page, click **uploading an existing file**
-- Drag in: `index.html`, `app.js`, `styles.css`, `config.js`, `admin.html`, `admin.js`, `poll.html`, `poll.js`, `host.html`, `host.js`
+- Drag in: `index.html`, `app.js`, `styles.css`, `config.js`, `admin.html`, `admin.js`, `poll.html`, `poll.js`, `host.html`, `host.js`, `play.html`, `play.js`, `present.html`, `present.js`
 - Then drag the whole `sql` folder in too (harmless, and it keeps everything together)
 - Click **Commit changes**
 
@@ -99,8 +106,8 @@ Follow in order. Roughly 30 minutes.
 ## Part 4 — Day to day
 
 Everything below is done from the site, not raw SQL. There's a small nav bar
-on every page: **Leaderboard**, **Poll**, and — only for the people entitled
-to see them — **Host** and **Admin**.
+on every page: **Leaderboard**, **Poll**, **Play**, and — only for the
+people entitled to see them — **Host**, **Present** and **Admin**.
 
 **Suggesting a topic**
 Anyone signed in can drop an idea in the pool from the leaderboard page.
@@ -140,6 +147,33 @@ An unsaved question is marked so you never lose track of it, and the page
 will warn you before you navigate away with changes unsaved. Questions lock
 once the night goes live.
 
+**Running the night**
+On Teams, share your screen and open the **Present** page — that's what the
+room sees. Everyone else opens **Play** on their phone; it finds the live
+quiz on its own, no code to type. When you're ready, **Start the night** on
+Present.
+
+From there: open a question (or press **Space**), read it aloud, wait for
+the room, then **Lock** (or press Space again) once enough people have
+answered — there's a live count so you're not guessing. Locking reveals the
+correct answer to everyone and moves standings forward; nothing about a
+question is ever visible to players until you open it, and nobody's score
+changes until you lock it. Locked a question too soon? **Reopen this
+question** brings it back before you move on.
+
+Once it's locked, every answer for that question appears underneath with
+**Full / Half / None** buttons — free text grading is occasionally wrong,
+and you have the final say. Scores update immediately.
+
+After the last question, **End the night** finalises the scores, then
+**Reveal the winners** runs the podium: third, then second, then first.
+Anyone who didn't answer a single question that night doesn't get a score
+row, so they won't show up on the leaderboard for it.
+
+If a phone's connection drops mid-quiz it recovers on its own — Play checks
+in with the server every few seconds regardless of the live connection, so
+nobody gets stuck on an old question.
+
 **Adding a new starter**
 Admin page → **People** → type their full name → **Add**.
 The login handle (slug) is generated for you — you never type it.
@@ -173,7 +207,6 @@ Live in about a minute. Hard refresh your phone if you see the old version.
 
 ## Still to build
 
-- **Stage 4** — live play night, auto-scoring, host override panel
 - **Stage 5** — the chaos: sounds, streak badges, animated overtakes, hall of shame
 
 The database schema already covers all of it, so no rebuilding later.

@@ -53,9 +53,15 @@ async function initNav(meId, isAdmin) {
   if (adminLink) adminLink.hidden = !isAdmin;
 
   const hostLink = $("nav-host");
-  if (!hostLink) return;
-  if (isAdmin) { hostLink.hidden = false; return; }
-  if (!meId) { hostLink.hidden = true; return; }
+  const presentLink = $("nav-present");
+
+  const setHosting = (hosting) => {
+    if (hostLink) hostLink.hidden = !hosting;
+    if (presentLink) presentLink.hidden = !hosting;
+  };
+
+  if (isAdmin) return setHosting(true);
+  if (!meId) return setHosting(false);
 
   const { data } = await db
     .from("weeks")
@@ -63,7 +69,7 @@ async function initNav(meId, isAdmin) {
     .eq("host_id", meId)
     .neq("status", "closed")
     .limit(1);
-  hostLink.hidden = !(data && data.length);
+  setHosting(!!(data && data.length));
 }
 
 /* ============================================================
