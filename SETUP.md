@@ -59,11 +59,16 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/08_final_submission.sql`, copy the whole file, paste, **Run**
 - This lets players change an answer any time before they personally submit, and moves the answer reveal and host override panel to after the night ends. Also safe to re-run any time.
 
-**1.11 Check it worked.**
+**1.11 Close a permissions gap on opening questions.**
+- **SQL Editor** → **New query**
+- Open `sql/09_gate_open_before_live.sql`, copy the whole file, paste, **Run**
+- Makes sure a question can never be opened before the night is started, at the database level, not just because the Present page doesn't show a button for it. Safe to re-run any time.
+
+**1.12 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 21 people. Benjamin Hay on top with 54.
 
-**1.12 Grab your two keys.**
+**1.13 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 

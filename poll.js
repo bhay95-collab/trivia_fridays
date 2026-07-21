@@ -90,14 +90,14 @@ async function loadPoll() {
     if (hosting) {
       locked(`No poll is open yet. You're hosting ${fmtDate(hosting.quiz_date)} — build your ballot on the host page.`);
     } else {
-      locked("No poll is open right now. Check back closer to Friday.");
+      locked("No poll is open right now. Check back closer to the next quiz.");
     }
     return;
   }
 
   currentWeek = polling;
   isHost = polling.host_id === myPlayerId;
-  $("tagline").textContent = polling.title ? `Vote: ${polling.title}` : "Vote for Friday's topic";
+  $("tagline").textContent = polling.title ? `Vote: ${polling.title}` : "Vote for this week's topic";
   $("host-note").hidden = !isHost;
   show("view-poll");
 

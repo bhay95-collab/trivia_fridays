@@ -13,13 +13,22 @@ let myPlayerId = null;
 /* ============================================================
    BOOT
    ============================================================ */
-(async function boot() {
+boot();
+
+async function boot() {
   const { data: { session } } = await db.auth.getSession();
   if (session) return showBoard();
   await loadRoster();
   show("view-auth");
   $("tagline").textContent = "Sign in to see where you sit.";
-})();
+}
+
+// If the browser restores this page from back/forward cache after
+// signing in elsewhere, re-check instead of showing a stale sign-in
+// form for someone who's actually already signed in.
+window.addEventListener("pageshow", (e) => {
+  if (e.persisted) boot();
+});
 
 function show(id) {
   document.querySelectorAll(".view").forEach((v) => (v.hidden = v.id !== id));
