@@ -12,7 +12,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const BADGE_ABBR = {
-  perfect: "PN",
+  perfect: "PQ",
   ever_present: "NM",
   hot_streak: "HS",
   fast_finger: "FF",

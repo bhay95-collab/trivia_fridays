@@ -176,8 +176,8 @@ body.is-strobe .bulbs{ animation-duration:.35s; opacity:1; height:8px; }
   0%,96%,100%{ opacity:1 } 97%{ opacity:.35 } 98%{ opacity:1 } 99%{ opacity:.5 }
 }
 .eyebrow{
-  max-width:640px; margin:1rem auto 0;
-  font-size:1rem; letter-spacing:.14em; text-transform:uppercase;
+  max-width:760px; margin:1rem auto 0;
+  font-size:clamp(1.1rem, 2.8vw, 1.5rem); letter-spacing:.1em; text-transform:uppercase;
   color:var(--cyan);
 }
 .masthead .tagline{ margin-top:.6rem; }
@@ -373,7 +373,7 @@ body.is-strobe .stage{ box-shadow:0 10px 0 rgba(0,0,0,.5), 0 0 60px rgba(255,197
 .plinth.p3{ animation-delay:.25s; }
 @keyframes rise{ from{ opacity:0; transform:translateY(30px) } to{ opacity:1; transform:none } }
 
-/* reveal-night states, driven by present.js */
+/* podium reveal states, driven by present.js */
 .podium.is-reveal .plinth{ animation:none; transition:opacity .45s var(--ease-out), transform .45s var(--ease-out); }
 .plinth.is-hidden{ opacity:0; transform:translateY(64px) scale(.94); }
 .plinth.is-landing{ animation:land .5s var(--ease-out); }

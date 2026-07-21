@@ -203,9 +203,9 @@ halves as (
   group by s.player_id
 )
 
--- Perfect Night: full marks across a whole quiz.
-select s.player_id, p.display_name, 'perfect', 'Perfect Night',
-       count(*) || case when count(*) = 1 then ' flawless night' else ' flawless nights' end
+-- Perfect Quiz: full marks across a whole quiz.
+select s.player_id, p.display_name, 'perfect', 'Perfect Quiz',
+       count(*) || case when count(*) = 1 then ' flawless quiz' else ' flawless quizzes' end
 from scores s
 join week_max m on m.week_id = s.week_id and m.max_points > 0
 join players p on p.id = s.player_id
@@ -338,7 +338,7 @@ halves as (
   group by s.player_id, p.display_name
 )
 
-(select 'highest_night', 'Highest single night', display_name,
+(select 'highest_score', 'Highest single score', display_name,
         round(points, 1) || ' pts · ' || to_char(quiz_date, 'DD Mon'), 'fame'
  from placed order by points desc, display_name limit 1)
 
@@ -358,7 +358,7 @@ union all
  order by second_half - first_half desc, display_name limit 1)
 
 union all
-(select 'lowest_night', 'Lowest single night', display_name,
+(select 'lowest_score', 'Lowest single score', display_name,
         round(points, 1) || ' pts · ' || to_char(quiz_date, 'DD Mon'), 'shame'
  from placed order by points asc, display_name limit 1)
 $season_records$;

@@ -326,7 +326,7 @@ function resultRowHTML(q, extra = "") {
     </li>`;
 }
 
-/* The full night as an ordered list of rows and streak banners. */
+/* The full quiz as an ordered list of rows and streak banners. */
 function resultsSequence() {
   const verdicts = questions.map((q) => (q.my_answer ? (q.my_verdict || "wrong") : "wrong"));
   const streaks = streakSegments(verdicts).filter((s) => s.type === "correct" && s.length >= STREAK_MIN);

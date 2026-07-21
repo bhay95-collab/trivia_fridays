@@ -327,7 +327,7 @@ function showLiveError(message) {
 /* ============================================================
    FINISHING THE QUIZ
    ============================================================ */
-$("end-night-btn").addEventListener("click", async () => {
+$("end-quiz-btn").addEventListener("click", async () => {
   if (!confirm("End the quiz? Anyone who hasn't submitted yet will be finalised automatically.")) return;
 
   const err = $("live-error");
