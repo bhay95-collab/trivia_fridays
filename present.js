@@ -357,16 +357,40 @@ async function enterReview() {
   $("review-panel").hidden = false;
   $("podium-panel").hidden = false;
   $("reveal-podium-btn").hidden = false;
-  $("reveal-podium-btn").disabled = false;
   $("present-podium").innerHTML = "";
   $("present-rest").innerHTML = "";
   renderReview();
+  await refreshReviewGate();
+}
+
+/* Free-text answers the grader didn't call a straight "correct"
+   need a human look before scores can go final - multiple choice
+   and exact matches never do. This keeps the reveal button in sync
+   with how many of those are still untouched. */
+async function refreshReviewGate() {
+  const { data, error } = await db.rpc("host_review_status", { p_week_id: currentWeek.id });
+  const row = Array.isArray(data) ? data[0] : data;
+  const pending = error ? null : (row?.still_pending || 0);
+  const btn = $("reveal-podium-btn");
+  const hint = $("review-gate-hint");
+
+  if (btn.hidden) return; // podium already revealed - nothing to gate
+
+  if (pending) {
+    btn.disabled = true;
+    hint.hidden = false;
+    hint.textContent = `${pending} free-text ${pending === 1 ? "answer" : "answers"} still need review before you can reveal the podium.`;
+  } else {
+    btn.disabled = false;
+    hint.hidden = true;
+  }
 }
 
 function renderReview() {
   const q = quiz[reviewIndex];
   if (!q) return;
 
+  $("review-error").hidden = true;
   $("review-progress").textContent = `Question ${q.q_number} of ${quiz.length}`;
   $("review-prev").disabled = reviewIndex === 0;
   $("review-next").disabled = reviewIndex === quiz.length - 1;
@@ -397,7 +421,7 @@ async function loadOverridePanel(questionId) {
 
   const [respRes, nomRes] = await Promise.all([
     db.from("responses")
-      .select("id, answer_raw, verdict, points_awarded, overridden, players(display_name)")
+      .select("id, answer_raw, verdict, points_awarded, overridden, reviewed, players(display_name)")
       .eq("question_id", questionId)
       .order("created_at"),
     isText
@@ -418,6 +442,7 @@ async function loadOverridePanel(questionId) {
         <span class="suggestion-topic">${esc(r.players?.display_name || "someone")}</span>
         <span class="suggestion-by">"${esc(r.answer_raw)}" · ${fmtPoints(r.points_awarded)} pts</span>
         ${r.overridden ? `<span class="badge badge-left">Overridden</span>` : ""}
+        ${isText && r.verdict !== "correct" && !r.reviewed ? `<span class="badge badge-warn">Needs review</span>` : ""}
       </div>
       <div class="row-actions">
         <button class="btn btn-small ${r.verdict === "correct" ? "is-active-verdict" : ""}" data-action="override" data-id="${r.id}" data-verdict="correct">Full</button>
@@ -439,7 +464,7 @@ $("override-list").addEventListener("click", async (e) => {
     const { error } = howler.dataset.nom
       ? await db.rpc("retract_howler", { p_nomination_id: howler.dataset.nom })
       : await db.rpc("nominate_howler", { p_response_id: howler.dataset.id });
-    if (error) return showLiveError(error.message);
+    if (error) return showReviewError(error.message);
     return loadOverridePanel(quiz[reviewIndex].id);
   }
 
@@ -447,10 +472,17 @@ $("override-list").addEventListener("click", async (e) => {
   if (!btn) return;
 
   const { error } = await db.rpc("override_response", { p_response_id: btn.dataset.id, p_verdict: btn.dataset.verdict });
-  if (error) return showLiveError(error.message);
+  if (error) return showReviewError(error.message);
 
   await loadOverridePanel(quiz[reviewIndex].id);
+  await refreshReviewGate();
 });
+
+function showReviewError(message) {
+  const err = $("review-error");
+  err.textContent = message;
+  err.hidden = false;
+}
 
 /* ============================================================
    PODIUM
@@ -459,14 +491,21 @@ $("reveal-podium-btn").addEventListener("click", async () => {
   const btn = $("reveal-podium-btn");
   btn.disabled = true;
 
+  const { error: finalizeError } = await db.rpc("finalize_week_scores", { p_week_id: currentWeek.id });
+  if (finalizeError) {
+    showReviewError(finalizeError.message);
+    return refreshReviewGate(); // re-checks pending count and re-disables if still blocked
+  }
+
   const { data, error } = await db.rpc("live_standings", { p_week_id: currentWeek.id });
   if (error) {
     btn.disabled = false;
-    return showLiveError(error.message);
+    return showReviewError(error.message);
   }
 
   finalStandings = data || [];
   btn.hidden = true;
+  $("review-gate-hint").hidden = true;
   await revealPodium(finalStandings);
 });
 

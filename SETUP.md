@@ -94,6 +94,11 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/15_close_host_write_gaps.sql`, copy the whole file, paste, **Run**
 - This removes four row-level-security policies that let a host bypass the app's own rules by writing straight to the database (skipping the checks that only exist inside the Start Quiz / Close Quiz / Save Question actions). Nothing in the app changes for anyone using it normally. Safe to re-run any time.
 
+**1.15d Add the host review gate.**
+- **SQL Editor** → **New query**
+- Open `sql/16_host_review_gate.sql`, copy the whole file, paste, **Run**
+- This splits closing a quiz from scoring it: ending the quiz still locks the questions and opens the review screen, but points no longer land on the leaderboard until the host finalises them, and finalising is refused while any free-text answer that wasn't graded a straight "correct" still hasn't been looked at. Multiple choice and exact free-text matches never need a look. Safe to re-run any time.
+
 **1.16 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 22 people. Benjamin Hay on top with 54.

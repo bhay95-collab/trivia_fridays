@@ -524,6 +524,7 @@ body.house-dim .page-strip{
 }
 .badge-admin{ background:rgba(37,232,226,.16); color:var(--cyan); }
 .badge-left{ background:rgba(255,243,222,.1); color:var(--dim); }
+.badge-warn{ background:rgba(255,84,112,.18); color:var(--red); }
 .badge-status{ background:rgba(255,243,222,.1); color:var(--cream); }
 .status-live{ background:rgba(255,45,149,.2); color:var(--magenta); }
 .status-closed{ background:rgba(255,243,222,.1); color:var(--dim); }
