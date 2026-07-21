@@ -145,7 +145,14 @@ $$;
 -- Once they've submitted: the same rows, now with the answer key
 -- and their verdict filled in. A question that hasn't been opened
 -- yet never appears, submitted or not.
+--
+-- Dropped first: this reshapes the columns returned by the
+-- sql/07_live_functions.sql version, and create or replace cannot
+-- change a function's OUT parameters, only add or drop the whole
+-- function.
 -- ============================================================
+drop function if exists live_state(uuid);
+
 create or replace function live_state(p_week_id uuid)
 returns table(
   week_status      text,
@@ -218,7 +225,14 @@ $$;
 -- Question content still comes from host_quiz(). This is just
 -- what's happening right now: how far through the quiz the room is,
 -- and how many players have submitted.
+--
+-- Dropped first: this reshapes the columns returned by the
+-- sql/07_live_functions.sql version, and create or replace cannot
+-- change a function's OUT parameters, only add or drop the whole
+-- function.
 -- ============================================================
+drop function if exists host_live_state(uuid);
+
 create or replace function host_live_state(p_week_id uuid)
 returns table(
   week_status      text,
