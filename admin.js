@@ -30,6 +30,9 @@ let myPlayerId = null;
     $("tagline").textContent = "People and quiz nights";
     $("whoami-name").textContent = me.display_name;
 
+    const hostLink = $("nav-host");
+    if (hostLink) hostLink.hidden = false; // admins can always reach the host page
+
     await loadPeople();
     await loadWeeks();
   } catch (err) {

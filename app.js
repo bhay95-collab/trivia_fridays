@@ -8,6 +8,7 @@ const emailFor = (slug) => `${slug}@${LOGIN_DOMAIN}`;
 
 let roster = [];
 let mySlug = null;
+let myPlayerId = null;
 
 /* ============================================================
    BOOT
@@ -141,10 +142,13 @@ async function showBoard() {
   if (user) {
     const { data: me } = await db
       .from("players")
-      .select("is_admin")
+      .select("id, is_admin")
       .eq("auth_id", user.id)
       .maybeSingle();
-    $("admin-link").hidden = !me?.is_admin;
+    if (me) {
+      myPlayerId = me.id;
+      await initNav(me.id, me.is_admin);
+    }
   }
 
   const ranked = withRanks(rows);
@@ -153,7 +157,95 @@ async function showBoard() {
   renderSpoon(ranked);
 
   if (meRow && ranked[0] && ranked[0].display_name === meRow.display_name) fireConfetti();
+
+  await loadSuggestions();
 }
+
+/* ============================================================
+   NAV
+   ============================================================ */
+async function initNav(meId, isAdmin) {
+  const adminLink = $("nav-admin");
+  if (adminLink) adminLink.hidden = !isAdmin;
+
+  const hostLink = $("nav-host");
+  if (!hostLink) return;
+  if (isAdmin) { hostLink.hidden = false; return; }
+  if (!meId) { hostLink.hidden = true; return; }
+
+  const { data } = await db
+    .from("weeks")
+    .select("id")
+    .eq("host_id", meId)
+    .neq("status", "closed")
+    .limit(1);
+  hostLink.hidden = !(data && data.length);
+}
+
+/* ============================================================
+   TOPIC SUGGESTIONS
+   ============================================================ */
+async function loadSuggestions() {
+  const err = $("suggest-error");
+  err.hidden = true;
+
+  const { data, error } = await db
+    .from("topic_suggestions")
+    .select("id, topic, used, player_id, players(display_name)")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    $("suggestion-list").innerHTML = `<li class="table-empty">Could not load suggestions.</li>`;
+    return;
+  }
+
+  $("suggestion-list").innerHTML = data.map((s) => `
+    <li class="${s.used ? "is-used" : ""}">
+      <div class="suggestion-text">
+        <span class="suggestion-topic">${esc(s.topic)}</span>
+        <span class="suggestion-by">— ${esc(s.players?.display_name || "someone")}</span>
+        ${s.used ? `<span class="badge badge-left">Used</span>` : ""}
+      </div>
+      ${s.player_id === myPlayerId ? `<button class="btn btn-small" data-id="${s.id}">Remove</button>` : ""}
+    </li>`).join("") || `<li class="table-empty">No suggestions yet. Add the first one.</li>`;
+}
+
+$("suggest-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $("suggest-input");
+  const err = $("suggest-error");
+  err.hidden = true;
+
+  const topic = input.value.trim();
+  if (!topic) return;
+
+  const { error } = await db.rpc("suggest_topic", { p_topic: topic });
+  if (error) {
+    err.textContent = error.message;
+    err.hidden = false;
+    return;
+  }
+
+  input.value = "";
+  await loadSuggestions();
+});
+
+$("suggestion-list").addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-id]");
+  if (!btn) return;
+
+  const err = $("suggest-error");
+  err.hidden = true;
+
+  const { error } = await db.rpc("delete_suggestion", { p_suggestion_id: btn.dataset.id });
+  if (error) {
+    err.textContent = error.message;
+    err.hidden = false;
+    return;
+  }
+
+  await loadSuggestions();
+});
 
 // Equal points share a rank. 1,2,2,4 not 1,2,3,4.
 function withRanks(rows) {

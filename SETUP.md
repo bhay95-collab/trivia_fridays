@@ -37,11 +37,16 @@ Follow in order. Roughly 30 minutes.
 - Open `sql/04_admin_functions.sql`, copy the whole file, paste, **Run**
 - This gives the admin page a safe way to add people, reset PINs, and manage quiz nights. It is safe to re-run any time you update it.
 
-**1.7 Check it worked.**
+**1.7 Add the topic suggestions and poll functions.**
+- **SQL Editor** → **New query**
+- Open `sql/05_poll_functions.sql`, copy the whole file, paste, **Run**
+- This powers the suggestion box, the host's ballot builder, and the voting page. Also safe to re-run any time.
+
+**1.8 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 21 people. Benjamin Hay on top with 54.
 
-**1.8 Grab your two keys.**
+**1.9 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 
@@ -71,7 +76,7 @@ Follow in order. Roughly 30 minutes.
 
 **3.3 Upload the files.**
 - On the empty repo page, click **uploading an existing file**
-- Drag in: `index.html`, `app.js`, `styles.css`, `config.js`, `admin.html`, `admin.js`
+- Drag in: `index.html`, `app.js`, `styles.css`, `config.js`, `admin.html`, `admin.js`, `poll.html`, `poll.js`, `host.html`, `host.js`
 - Then drag the whole `sql` folder in too (harmless, and it keeps everything together)
 - Click **Commit changes**
 
@@ -88,9 +93,29 @@ Follow in order. Roughly 30 minutes.
 
 ## Part 4 — Day to day
 
-Everything below is done from the admin page, not raw SQL. Open your site,
-sign in, and click **Admin** at the bottom of the leaderboard (only visible
-to admins). Or go straight to `https://YOURNAME.github.io/trivia-fridays/admin.html`.
+Everything below is done from the site, not raw SQL. There's a small nav bar
+on every page: **Leaderboard**, **Poll**, and — only for the people entitled
+to see them — **Host** and **Admin**.
+
+**Suggesting a topic**
+Anyone signed in can drop an idea in the pool from the leaderboard page.
+Suggestions are not anonymous — everyone can see who suggested what. Your
+own suggestions have a **Remove** button.
+
+**Building a ballot for the week**
+Whoever is hosting opens the **Host** page (admins can host any night; other
+players only see their own). Pick a few suggestions for the ballot, or write
+a topic nobody suggested. **Open the poll** once there are at least two
+options.
+
+**Voting**
+Everyone (except the host of that night) votes on the **Poll** page. Tap a
+topic to vote, tap another to change your mind. Counts update live.
+
+**Closing the poll**
+Back on the **Host** page, **Close the poll** once people have voted. The
+winning topic is saved automatically and shown on the host page. A tie is
+broken at random and the page tells you when that happens.
 
 **Adding a new starter**
 Admin page → **People** → type their full name → **Add**.
@@ -125,7 +150,6 @@ Live in about a minute. Hard refresh your phone if you see the old version.
 
 ## Still to build
 
-- **Stage 2** — topic suggestions box + weekly poll
 - **Stage 3** — host's quiz builder (multiple choice + free text, points per question)
 - **Stage 4** — live play night, auto-scoring, host override panel
 - **Stage 5** — the chaos: sounds, streak badges, animated overtakes, hall of shame

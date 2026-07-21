@@ -13,6 +13,13 @@
 
 <div class="bulbs" aria-hidden="true"></div>
 
+<nav class="site-nav">
+  <a href="index.html" class="nav-link is-active">Leaderboard</a>
+  <a href="poll.html" class="nav-link">Poll</a>
+  <a href="host.html" class="nav-link" id="nav-host" hidden>Host</a>
+  <a href="admin.html" class="nav-link" id="nav-admin" hidden>Admin</a>
+</nav>
+
 <header class="masthead">
   <p class="eyebrow">Every Friday · winner takes nothing</p>
   <h1 class="wordmark"><span>Trivia</span><span>Fridays</span></h1>
@@ -67,7 +74,23 @@
 
   <p class="rule">Ranked on total points across the season. Show up, score up.</p>
 
-  <p class="admin-link" id="admin-link" hidden><a href="admin.html">Admin</a></p>
+  <section class="panel">
+    <h2 class="panel-title">Topic suggestions</h2>
+    <p class="hint">Drop an idea in the pool. The host picks a few for the ballot each week.</p>
+
+    <form id="suggest-form" class="inline-form">
+      <label class="field">
+        <span>Your idea</span>
+        <input id="suggest-input" type="text" placeholder="e.g. 90s one-hit wonders" autocomplete="off" maxlength="120">
+      </label>
+      <button type="submit" class="btn btn-primary">Add</button>
+    </form>
+    <p class="error" id="suggest-error" hidden></p>
+
+    <ul class="suggestion-list" id="suggestion-list">
+      <li class="table-empty">Loading…</li>
+    </ul>
+  </section>
 </section>
 
 <canvas id="confetti" aria-hidden="true"></canvas>

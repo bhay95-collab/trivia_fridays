@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trivia Fridays — Poll</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="bulbs" aria-hidden="true"></div>
+
+<nav class="site-nav">
+  <a href="index.html" class="nav-link">Leaderboard</a>
+  <a href="poll.html" class="nav-link is-active">Poll</a>
+  <a href="host.html" class="nav-link" id="nav-host" hidden>Host</a>
+  <a href="admin.html" class="nav-link" id="nav-admin" hidden>Admin</a>
+</nav>
+
+<header class="masthead masthead-admin">
+  <p class="eyebrow">Trivia Fridays</p>
+  <h1 class="wordmark wordmark-sm"><span>Poll</span></h1>
+  <p class="tagline" id="tagline">Checking who you are…</p>
+</header>
+
+<!-- ================= LOCKED / MESSAGE ================= -->
+<section id="view-locked" class="view card-stage" hidden>
+  <div class="marquee-card">
+    <h2 class="card-title">Hang on</h2>
+    <p class="hint" id="locked-message"></p>
+  </div>
+</section>
+
+<!-- ================= POLL ================= -->
+<section id="view-poll" class="view poll-view" hidden>
+  <p class="hint host-note" id="host-note" hidden>You're hosting this one, so you sit out the vote — here's how it's tracking.</p>
+
+  <div class="poll-options" id="poll-options"></div>
+
+  <p class="error" id="poll-error" hidden></p>
+</section>
+
+<script type="module" src="poll.js"></script>
+</body>
+</html>

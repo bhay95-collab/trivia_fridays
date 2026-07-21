@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trivia Fridays — Host</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="bulbs" aria-hidden="true"></div>
+
+<nav class="site-nav">
+  <a href="index.html" class="nav-link">Leaderboard</a>
+  <a href="poll.html" class="nav-link">Poll</a>
+  <a href="host.html" class="nav-link is-active">Host</a>
+  <a href="admin.html" class="nav-link" id="nav-admin" hidden>Admin</a>
+</nav>
+
+<header class="masthead masthead-admin">
+  <p class="eyebrow">Trivia Fridays</p>
+  <h1 class="wordmark wordmark-sm"><span>Host</span></h1>
+  <p class="tagline" id="tagline">Checking who you are…</p>
+</header>
+
+<!-- ================= LOCKED / MESSAGE ================= -->
+<section id="view-locked" class="view card-stage" hidden>
+  <div class="marquee-card">
+    <h2 class="card-title">Nothing to host</h2>
+    <p class="hint" id="locked-message"></p>
+  </div>
+</section>
+
+<!-- ================= HOST ================= -->
+<section id="view-host" class="view admin-view" hidden>
+
+  <label class="field" id="week-switcher-field" hidden>
+    <span>Managing</span>
+    <select id="week-switcher"></select>
+  </label>
+
+  <section class="panel">
+    <h2 class="panel-title" id="week-heading">Hosting</h2>
+    <p class="hint" id="week-meta"></p>
+  </section>
+
+  <section class="panel" id="winner-panel" hidden>
+    <h2 class="panel-title">Winning topic</h2>
+    <p class="winner-topic" id="winner-topic"></p>
+    <p class="hint" id="winner-tie-note" hidden>It was a tie — picked at random.</p>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Suggestion pool</h2>
+    <p class="hint">Pick a few of these for the ballot, or write your own below.</p>
+    <ul class="suggestion-list" id="host-suggestion-list">
+      <li class="table-empty">Loading…</li>
+    </ul>
+  </section>
+
+  <section class="panel" id="custom-topic-panel">
+    <h2 class="panel-title">Add your own topic</h2>
+    <form id="custom-topic-form" class="inline-form">
+      <label class="field">
+        <span>Topic nobody suggested</span>
+        <input id="custom-topic-input" type="text" maxlength="120" autocomplete="off" placeholder="e.g. Local sports trivia">
+      </label>
+      <button type="submit" class="btn btn-primary">Add to ballot</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel-title">Ballot</h2>
+    <ul class="ballot-list" id="ballot-list">
+      <li class="table-empty">Nothing on the ballot yet.</li>
+    </ul>
+    <p class="hint" id="ballot-hint"></p>
+    <div class="row-actions">
+      <button class="btn btn-primary" id="open-poll-btn" hidden>Open the poll</button>
+      <button class="btn btn-small" id="close-poll-btn" hidden>Close the poll</button>
+    </div>
+  </section>
+
+  <p class="error" id="host-error" hidden></p>
+</section>
+
+<script type="module" src="host.js"></script>
+</body>
+</html>
