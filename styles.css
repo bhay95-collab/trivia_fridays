@@ -962,8 +962,8 @@ body.page-present{ padding-bottom:9.5rem; }
   background:linear-gradient(180deg, var(--gold), #FF7A3D 45%, var(--magenta));
   -webkit-mask:repeating-linear-gradient(180deg, #000 0 12px, transparent 12px 17px);
   mask:repeating-linear-gradient(180deg, #000 0 12px, transparent 12px 17px);
-  filter:drop-shadow(0 0 42px rgba(255,45,149,.4));
-  opacity:.55;
+  filter:drop-shadow(0 0 34px rgba(255,45,149,.28));
+  opacity:.32;
 }
 .synth-glow{
   position:absolute; left:0; right:0; bottom:45%; height:2px;
@@ -1047,6 +1047,10 @@ body.page-present{ padding-bottom:9.5rem; }
   .played{ display:none; }
   .deck{ gap:.5rem; }
   .deck-nav{ order:3; width:100%; margin-inline:0; }
+  /* keep the marquee inside the screen: tighter frame + smaller floor
+     size so the longest word ("Unscheduled") no longer bleeds off-edge */
+  .marquee-sign{ max-width:100%; padding:1.2rem 1rem 1rem; }
+  .wordmark{ font-size:clamp(1.7rem, 8vw, 3rem); }
 }
 
 /* ================= confetti overlay ================= */
