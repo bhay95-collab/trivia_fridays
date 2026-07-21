@@ -89,6 +89,11 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/14_season_stats.sql`, copy the whole file, paste, **Run**
 - This adds the season badges, the Hall of Fame and Shame records, and the worst-answer-of-the-season ballot (the host nominates from the answer review, everyone gets one movable vote). Safe to re-run any time.
 
+**1.15c Close the host direct-write security gap.**
+- **SQL Editor** → **New query**
+- Open `sql/15_close_host_write_gaps.sql`, copy the whole file, paste, **Run**
+- This removes four row-level-security policies that let a host bypass the app's own rules by writing straight to the database (skipping the checks that only exist inside the Start Quiz / Close Quiz / Save Question actions). Nothing in the app changes for anyone using it normally. Safe to re-run any time.
+
 **1.16 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 22 people. Benjamin Hay on top with 54.
