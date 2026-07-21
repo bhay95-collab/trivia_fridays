@@ -6,27 +6,33 @@
 <title>Trivia Fridays — Host</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Barlow:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="page-host">
 
+<a class="skip-link" href="#main">Skip to content</a>
 <div class="bulbs" aria-hidden="true"></div>
 
-<nav class="site-nav">
-  <a href="index.html" class="nav-link">Leaderboard</a>
-  <a href="poll.html" class="nav-link">Poll</a>
-  <a href="play.html" class="nav-link">Play</a>
-  <a href="host.html" class="nav-link is-active" id="nav-host" hidden>Host</a>
-  <a href="present.html" class="nav-link" id="nav-present" hidden>Present</a>
-  <a href="admin.html" class="nav-link" id="nav-admin" hidden>Admin</a>
-</nav>
-
-<header class="masthead masthead-admin">
-  <p class="eyebrow">Trivia Fridays</p>
-  <h1 class="wordmark wordmark-sm"><span>Host</span></h1>
-  <p class="tagline" id="tagline">Checking who you are…</p>
+<header class="deck">
+  <a href="index.html" class="deck-brand"><span>Trivia</span><span>Fridays</span></a>
+  <nav class="deck-nav" aria-label="Main">
+    <a href="index.html" class="nav-link">Leaderboard</a>
+    <a href="poll.html" class="nav-link">Poll</a>
+    <a href="play.html" class="nav-link">Play</a>
+    <a href="host.html" class="nav-link is-active" id="nav-host" hidden>Host</a>
+    <a href="present.html" class="nav-link" id="nav-present" hidden>Present</a>
+    <a href="admin.html" class="nav-link" id="nav-admin" hidden>Admin</a>
+  </nav>
+  <button type="button" class="sound-toggle" id="sound-toggle" aria-pressed="false">Sound off</button>
 </header>
+
+<div class="page-strip">
+  <h1 class="page-name">Host</h1>
+  <p class="tagline" id="tagline">Checking who you are…</p>
+</div>
+
+<main id="main">
 
 <!-- ================= LOCKED / MESSAGE ================= -->
 <section id="view-locked" class="view card-stage" hidden>
@@ -112,6 +118,9 @@
   <p class="error" id="host-error" hidden></p>
 </section>
 
+</main>
+
+<script type="module" src="sound.js"></script>
 <script type="module" src="host.js"></script>
 </body>
 </html>

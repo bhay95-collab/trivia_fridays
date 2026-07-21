@@ -1,6 +1,8 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { mediaRendererMarkup } from "./media-utils.js";
+import { sfx } from "./sound.js";
+import { fireConfetti, delay, reducedMotion } from "./fx.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -131,6 +133,7 @@ async function loadWeek(weekId) {
   $("ready-panel").hidden = true;
   $("live-panel").hidden = true;
   $("review-panel").hidden = true;
+  $("podium-panel").hidden = true;
 
   if (week.status === "building") {
     $("tagline").textContent = "Ready to start";
@@ -254,7 +257,7 @@ function renderLive() {
   }
 
   $("answer-meter").hidden = false;
-  $("answer-meter-fill").style.width = "0%";
+  $("answer-meter-fill").style.transform = "scaleX(0)";
   $("answer-meter-label").textContent = "";
 
   $("present-prev").disabled = viewIndex === 0;
@@ -282,6 +285,7 @@ $("present-next").addEventListener("click", async () => {
   const { error } = await db.rpc("set_question_status", { p_question_id: next.id, p_status: "open" });
   if (error) return showLiveError(error.message);
 
+  sfx.tick();
   await reloadQuiz();
   viewIndex = openedQuestions().length - 1;
   renderLive();
@@ -309,8 +313,8 @@ async function updateMeter() {
   if (!q) return;
   const { count } = await db.from("responses").select("id", { count: "exact", head: true }).eq("question_id", q.id);
   const answered = count || 0;
-  const pct = expected ? Math.round((answered / expected) * 100) : 0;
-  $("answer-meter-fill").style.width = `${Math.min(pct, 100)}%`;
+  const pct = expected ? Math.min(answered / expected, 1) : 0;
+  $("answer-meter-fill").style.transform = `scaleX(${pct})`;
   $("answer-meter-label").textContent = `${answered} / ${expected} answered`;
 }
 
@@ -337,6 +341,7 @@ $("end-night-btn").addEventListener("click", async () => {
   }
 
   stopAllTimers();
+  sfx.buzz(); // the answers are locked
   currentWeek.status = "closed";
   $("tagline").textContent = "That's a wrap";
   $("live-panel").hidden = true;
@@ -350,7 +355,9 @@ async function enterReview() {
   await reloadQuiz();
   reviewIndex = 0;
   $("review-panel").hidden = false;
+  $("podium-panel").hidden = false;
   $("reveal-podium-btn").hidden = false;
+  $("reveal-podium-btn").disabled = false;
   $("present-podium").innerHTML = "";
   $("present-rest").innerHTML = "";
   renderReview();
@@ -385,18 +392,27 @@ function correctAnswerText(q) {
 }
 
 async function loadOverridePanel(questionId) {
-  const { data, error } = await db
-    .from("responses")
-    .select("id, answer_raw, verdict, points_awarded, overridden, players(display_name)")
-    .eq("question_id", questionId)
-    .order("created_at");
+  const q = quiz.find((x) => x.id === questionId);
+  const isText = q && q.q_type === "text";
 
-  if (error) {
+  const [respRes, nomRes] = await Promise.all([
+    db.from("responses")
+      .select("id, answer_raw, verdict, points_awarded, overridden, players(display_name)")
+      .eq("question_id", questionId)
+      .order("created_at"),
+    isText
+      ? db.from("howler_nominations").select("id, response_id")
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  if (respRes.error) {
     $("override-list").innerHTML = `<li class="table-empty">Could not load answers.</li>`;
     return;
   }
 
-  $("override-list").innerHTML = (data || []).map((r) => `
+  const noms = new Map((nomRes.data || []).map((n) => [n.response_id, n.id]));
+
+  $("override-list").innerHTML = (respRes.data || []).map((r) => `
     <li>
       <div class="suggestion-text">
         <span class="suggestion-topic">${esc(r.players?.display_name || "someone")}</span>
@@ -407,11 +423,26 @@ async function loadOverridePanel(questionId) {
         <button class="btn btn-small ${r.verdict === "correct" ? "is-active-verdict" : ""}" data-action="override" data-id="${r.id}" data-verdict="correct">Full</button>
         <button class="btn btn-small ${r.verdict === "partial" ? "is-active-verdict" : ""}" data-action="override" data-id="${r.id}" data-verdict="partial">Half</button>
         <button class="btn btn-small ${r.verdict === "wrong" ? "is-active-verdict" : ""}" data-action="override" data-id="${r.id}" data-verdict="wrong">None</button>
+        ${isText ? `
+        <button class="btn btn-small ${noms.has(r.id) ? "is-active-verdict" : ""}"
+                data-action="howler" data-id="${r.id}" data-nom="${noms.get(r.id) || ""}"
+                title="Put this answer on the season's worst-answer ballot">
+          ${noms.has(r.id) ? "On the ballot" : "Howler"}
+        </button>` : ""}
       </div>
     </li>`).join("") || `<li class="table-empty">Nobody answered this one.</li>`;
 }
 
 $("override-list").addEventListener("click", async (e) => {
+  const howler = e.target.closest("button[data-action='howler']");
+  if (howler) {
+    const { error } = howler.dataset.nom
+      ? await db.rpc("retract_howler", { p_nomination_id: howler.dataset.nom })
+      : await db.rpc("nominate_howler", { p_response_id: howler.dataset.id });
+    if (error) return showLiveError(error.message);
+    return loadOverridePanel(quiz[reviewIndex].id);
+  }
+
   const btn = e.target.closest("button[data-action='override']");
   if (!btn) return;
 
@@ -425,13 +456,25 @@ $("override-list").addEventListener("click", async (e) => {
    PODIUM
    ============================================================ */
 $("reveal-podium-btn").addEventListener("click", async () => {
-  $("reveal-podium-btn").hidden = true;
-  const { data } = await db.rpc("live_standings", { p_week_id: currentWeek.id });
+  const btn = $("reveal-podium-btn");
+  btn.disabled = true;
+
+  const { data, error } = await db.rpc("live_standings", { p_week_id: currentWeek.id });
+  if (error) {
+    btn.disabled = false;
+    return showLiveError(error.message);
+  }
+
   finalStandings = data || [];
-  revealPodium(finalStandings);
+  btn.hidden = true;
+  await revealPodium(finalStandings);
 });
 
-function revealPodium(rows) {
+/* The one big moment. Sound and motion run off the same timeline
+   so they cannot drift: drums build, third and second land with a
+   thud, the drums hold through a long beat, and first arrives with
+   the fanfare, the confetti and the lights all at once. */
+async function revealPodium(rows) {
   const top3 = rows.slice(0, 3);
   const order = [1, 0, 2]; // left-to-right: 2nd, 1st, 3rd
 
@@ -446,23 +489,45 @@ function revealPodium(rows) {
       </div>`;
   }).join("");
 
-  const revealOrder = [2, 1, 0]; // 3rd, then 2nd, then 1st
-  let i = 0;
-  (function step() {
-    if (i >= revealOrder.length) {
-      renderRest(rows.slice(3));
-      return;
-    }
-    const rank = revealOrder[i++];
-    const el = document.querySelector(`.plinth[data-rank="${rank}"]`);
-    if (el) el.classList.remove("is-hidden");
-    setTimeout(step, 1300);
-  })();
+  // reduced motion: the full result, immediately, no theatre
+  if (reducedMotion()) {
+    document.querySelectorAll("#present-podium .plinth").forEach((el) => el.classList.remove("is-hidden"));
+    renderRest(rows.slice(3));
+    return;
+  }
+
+  document.body.classList.add("house-dim");
+  const roll = sfx.drumroll(7);
+  await delay(1500);              // let the drums build
+
+  await land(2);                  // 3rd
+  await delay(1100);
+  await land(1);                  // 2nd
+  await delay(1700);              // the held beat before the winner
+  roll.stop();
+  await land(0);                  // 1st
+  sfx.fanfare();
+  document.body.classList.add("is-strobe");
+  fireConfetti($("confetti"), { count: 220, frames: 430 });
+
+  await delay(1900);
+  document.body.classList.remove("house-dim");
+  renderRest(rows.slice(3));
+  setTimeout(() => document.body.classList.remove("is-strobe"), 6000);
+}
+
+async function land(rank) {
+  const el = document.querySelector(`.plinth[data-rank="${rank}"]`);
+  if (!el) return;
+  el.classList.remove("is-hidden");
+  el.classList.add("is-landing");
+  sfx.slam();
+  await delay(480);
 }
 
 function renderRest(rows) {
   $("present-rest").innerHTML = rows.map((r, i) => `
-    <li>
+    <li data-key="${r.player_id}">
       <span class="rank">${ordinal(i + 4)}</span>
       <span class="name">${esc(r.display_name)}</span>
       <span class="score">${fmtPoints(r.total_points)}</span>

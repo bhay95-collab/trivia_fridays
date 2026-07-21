@@ -6,27 +6,33 @@
 <title>Trivia Fridays — Present</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Barlow:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="page-present">
 
+<a class="skip-link" href="#main">Skip to content</a>
 <div class="bulbs" aria-hidden="true"></div>
 
-<nav class="site-nav">
-  <a href="index.html" class="nav-link">Leaderboard</a>
-  <a href="poll.html" class="nav-link">Poll</a>
-  <a href="play.html" class="nav-link">Play</a>
-  <a href="host.html" class="nav-link" id="nav-host" hidden>Host</a>
-  <a href="present.html" class="nav-link is-active" id="nav-present" hidden>Present</a>
-  <a href="admin.html" class="nav-link" id="nav-admin" hidden>Admin</a>
-</nav>
-
-<header class="masthead masthead-admin">
-  <p class="eyebrow">Trivia Fridays</p>
-  <h1 class="wordmark wordmark-sm"><span>Present</span></h1>
-  <p class="tagline" id="tagline">Checking who you are…</p>
+<header class="deck">
+  <a href="index.html" class="deck-brand"><span>Trivia</span><span>Fridays</span></a>
+  <nav class="deck-nav" aria-label="Main">
+    <a href="index.html" class="nav-link">Leaderboard</a>
+    <a href="poll.html" class="nav-link">Poll</a>
+    <a href="play.html" class="nav-link">Play</a>
+    <a href="host.html" class="nav-link" id="nav-host" hidden>Host</a>
+    <a href="present.html" class="nav-link is-active" id="nav-present" hidden>Present</a>
+    <a href="admin.html" class="nav-link" id="nav-admin" hidden>Admin</a>
+  </nav>
+  <button type="button" class="sound-toggle" id="sound-toggle" aria-pressed="false">Sound off</button>
 </header>
+
+<div class="page-strip">
+  <h1 class="page-name">Present</h1>
+  <p class="tagline" id="tagline">Checking who you are…</p>
+</div>
+
+<main id="main">
 
 <!-- ================= LOCKED / MESSAGE ================= -->
 <section id="view-locked" class="view card-stage" hidden>
@@ -37,7 +43,7 @@
 </section>
 
 <!-- ================= PRESENT ================= -->
-<section id="view-present" class="view admin-view" hidden>
+<section id="view-present" class="view" hidden>
 
   <label class="field" id="week-switcher-field" hidden>
     <span>Managing</span>
@@ -49,7 +55,7 @@
     <div class="marquee-card">
       <h2 class="card-title" id="ready-heading">Ready when you are</h2>
       <p class="hint" id="ready-meta"></p>
-      <button type="button" class="btn btn-primary" id="start-week-btn">Start the quiz</button>
+      <button type="button" class="btn btn-gold" id="start-week-btn">Start the quiz</button>
       <p class="error" id="ready-error" hidden></p>
     </div>
   </section>
@@ -58,31 +64,29 @@
        Nothing here ever shows a correct answer or another player's
        response - that only happens once the quiz is closed. -->
   <section id="live-panel" hidden>
-    <div class="play-nav">
-      <button type="button" class="btn btn-small" id="present-prev">&larr; Prev</button>
-      <span class="present-progress" id="present-progress"></span>
-      <button type="button" class="btn btn-small" id="present-next">Next &rarr;</button>
-    </div>
-
     <h1 class="present-prompt" id="present-prompt"></h1>
 
     <div class="media-stack" id="present-media" hidden></div>
 
     <div class="present-options" id="present-options" hidden></div>
 
-    <div class="answer-meter" id="answer-meter" hidden>
-      <div class="answer-meter-bar"><div class="answer-meter-fill" id="answer-meter-fill"></div></div>
-      <p class="answer-meter-label" id="answer-meter-label"></p>
-    </div>
+    <p class="hint" id="live-hint" style="text-align:center"></p>
+    <p class="error" id="live-error" style="text-align:center" hidden></p>
 
-    <p class="hint" id="live-hint"></p>
+    <!-- the host's physical controls, pinned along the bottom -->
+    <div class="control-deck">
+      <button type="button" class="btn btn-small" id="present-prev">&larr; Prev</button>
+      <span class="present-progress" id="present-progress"></span>
+      <button type="button" class="btn btn-small" id="present-next">Next &rarr;</button>
 
-    <section class="panel" id="finish-panel">
-      <h2 class="panel-title">Finishing up</h2>
-      <p class="hint" id="submitted-meta"></p>
+      <div class="answer-meter" id="answer-meter" hidden>
+        <div class="answer-meter-bar"><div class="answer-meter-fill" id="answer-meter-fill"></div></div>
+        <span class="answer-meter-label" id="answer-meter-label"></span>
+      </div>
+
+      <span class="answer-meter-label" id="submitted-meta"></span>
       <button type="button" class="btn btn-small" id="end-night-btn">End the quiz</button>
-      <p class="error" id="live-error" hidden></p>
-    </section>
+    </div>
   </section>
 
   <!-- after the quiz: safe to show answers and review together -->
@@ -98,19 +102,30 @@
       <p class="reveal-answer" id="review-answer"></p>
       <ul class="override-list" id="override-list"></ul>
     </section>
+  </section>
 
-    <section class="card-stage" id="podium-panel">
-      <div class="marquee-card podium-card">
-        <h2 class="card-title">That's a wrap</h2>
-        <button type="button" class="btn btn-primary" id="reveal-podium-btn">Reveal the winners</button>
-        <div class="podium" id="present-podium"></div>
-        <ol class="rankings" id="present-rest"></ol>
+  <!-- the big moment: its own zone so the house lights can dim
+       around it while the podium takes the stage -->
+  <section class="podium-zone" id="podium-panel" hidden>
+    <div class="stage">
+      <span class="stage-label">Tonight's podium</span>
+      <div class="reveal-cta">
+        <button type="button" class="btn btn-gold" id="reveal-podium-btn">Reveal the winners</button>
       </div>
-    </section>
+      <div class="podium is-reveal" id="present-podium"></div>
+    </div>
+    <div class="screen">
+      <ol class="rankings" id="present-rest"></ol>
+    </div>
   </section>
 
 </section>
 
+</main>
+
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script type="module" src="sound.js"></script>
 <script type="module" src="present.js"></script>
 </body>
 </html>

@@ -1,6 +1,9 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { mediaRendererMarkup } from "./media-utils.js";
+import { sfx } from "./sound.js";
+import { animateReorder, reducedMotion, delay } from "./fx.js";
+import { streakSegments, streakLine, streakBreakLine, STREAK_MIN } from "./streaks.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -270,6 +273,7 @@ async function saveAnswer(answer) {
   }
 
   q.my_answer = answer;
+  sfx.tick();
   forceRenderBrowse();
 }
 
@@ -296,28 +300,105 @@ $("submit-final-btn").addEventListener("click", async () => {
   await refreshState();
 });
 
+/* ============================================================
+   THE REVEAL — answers flip over one at a time, streaks earn a
+   banner and light the screen up, broken streaks get a eulogy.
+   Runs once per quiz per browser; reloads render instantly.
+   ============================================================ */
+let revealing = false;
+
+function resultRowHTML(q, extra = "") {
+  const mine = q.q_type === "mc"
+    ? (q.options || []).find((o) => o.key === q.my_answer)?.text || (q.my_answer ? q.my_answer : null)
+    : q.my_answer;
+  const correct = q.q_type === "mc"
+    ? (q.options || []).find((o) => o.key === q.correct_key)?.text || q.correct_key
+    : q.correct_text;
+  const verdict = q.my_answer ? (q.my_verdict || "wrong") : "wrong";
+  const verdictLabel = !q.my_answer ? "Didn't answer" : verdict === "correct" ? "Full marks" : verdict === "partial" ? "Half marks" : "No marks";
+
+  return `
+    <li class="results-item is-${verdict} ${extra}">
+      <p class="results-prompt">Q${q.q_number}. ${esc(q.prompt)}</p>
+      <p class="results-mine">Your answer: ${mine ? esc(mine) : "nothing"}</p>
+      <p class="results-correct">Correct answer: ${esc(correct)}</p>
+      <p class="results-verdict">${verdictLabel} · ${fmtPoints(q.my_points || 0)} pts</p>
+    </li>`;
+}
+
+/* The full night as an ordered list of rows and streak banners. */
+function resultsSequence() {
+  const verdicts = questions.map((q) => (q.my_answer ? (q.my_verdict || "wrong") : "wrong"));
+  const streaks = streakSegments(verdicts).filter((s) => s.type === "correct" && s.length >= STREAK_MIN);
+
+  const bannerAfter = new Map();
+  for (const s of streaks) {
+    bannerAfter.set(s.start + STREAK_MIN - 1, { break: false, text: streakLine(s.length) });
+    const endIdx = s.start + s.length;
+    if (endIdx < questions.length) {
+      bannerAfter.set(endIdx, { break: true, text: streakBreakLine(s.length, questions[endIdx].q_number) });
+    }
+  }
+
+  const items = [];
+  questions.forEach((q, i) => {
+    items.push({ kind: "answer", verdict: verdicts[i], points: Number(q.my_points) || 0, html: (x) => resultRowHTML(q, x) });
+    const b = bannerAfter.get(i);
+    if (b) {
+      items.push({
+        kind: b.break ? "break" : "streak",
+        html: (x) => `<li class="streak-banner ${b.break ? "is-break" : ""} ${x}">${esc(b.text)}</li>`,
+      });
+    }
+  });
+  return items;
+}
+
 function renderResults() {
+  if (revealing) return;
   const total = questions.reduce((sum, q) => sum + (Number(q.my_points) || 0), 0);
-  $("results-total").textContent = `${fmtPoints(total)} ${Number(total) === 1 ? "point" : "points"}`;
+  const seenKey = `tf-reveal-${currentWeek.id}`;
+  const items = resultsSequence();
 
-  $("results-list").innerHTML = questions.map((q) => {
-    const mine = q.q_type === "mc"
-      ? (q.options || []).find((o) => o.key === q.my_answer)?.text || (q.my_answer ? q.my_answer : null)
-      : q.my_answer;
-    const correct = q.q_type === "mc"
-      ? (q.options || []).find((o) => o.key === q.correct_key)?.text || q.correct_key
-      : q.correct_text;
-    const verdict = q.my_answer ? (q.my_verdict || "wrong") : "wrong";
-    const verdictLabel = !q.my_answer ? "Didn't answer" : verdict === "correct" ? "Full marks" : verdict === "partial" ? "Half marks" : "No marks";
+  if (sessionStorage.getItem(seenKey) || reducedMotion()) {
+    sessionStorage.setItem(seenKey, "1");
+    $("results-total").textContent = `${fmtPoints(total)} pts`;
+    $("results-list").innerHTML = items.map((it) => it.html("")).join("");
+    return;
+  }
 
-    return `
-      <li class="results-item is-${verdict}">
-        <p class="results-prompt">Q${q.q_number}. ${esc(q.prompt)}</p>
-        <p class="results-mine">Your answer: ${mine ? esc(mine) : "—"}</p>
-        <p class="results-correct">Correct answer: ${esc(correct)}</p>
-        <p class="results-verdict">${verdictLabel} — ${fmtPoints(q.my_points || 0)} pts</p>
-      </li>`;
-  }).join("");
+  sessionStorage.setItem(seenKey, "1");
+  revealing = true;
+  runReveal(items).finally(() => { revealing = false; });
+}
+
+async function runReveal(items) {
+  const list = $("results-list");
+  list.innerHTML = "";
+  let running = 0;
+  $("results-total").textContent = `${fmtPoints(0)} pts`;
+
+  for (const it of items) {
+    list.insertAdjacentHTML("beforeend", it.html("is-veiled"));
+    const el = list.lastElementChild;
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("is-veiled")));
+
+    if (it.kind === "answer") {
+      if (it.verdict === "correct") sfx.chime();
+      else if (it.verdict === "partial") sfx.tick();
+      running += it.points;
+      $("results-total").textContent = `${fmtPoints(running)} pts`;
+      await delay(520);
+    } else if (it.kind === "streak") {
+      sfx.sting();
+      document.body.classList.add("is-onfire");
+      setTimeout(() => document.body.classList.remove("is-onfire"), 1900);
+      await delay(950);
+    } else {
+      sfx.womp();
+      await delay(950);
+    }
+  }
 }
 
 /* ============================================================
@@ -327,12 +408,17 @@ async function refreshStandings() {
   const { data, error } = await db.rpc("live_standings", { p_week_id: currentWeek.id });
   if (error) return;
 
-  $("play-standings").innerHTML = (data || []).map((r) => `
-    <li class="${r.player_id === myPlayer.id ? "is-me" : ""}">
-      <span class="rank">${ordinal(r.standing)}</span>
-      <span class="name">${esc(r.display_name)}</span>
-      <span class="score">${fmtPoints(r.total_points)}</span>
-    </li>`).join("") || `<li class="name">No scores yet.</li>`;
+  // FLIP: rows physically slide past each other when the order
+  // changes between questions - overtakes happen on screen
+  const list = $("play-standings");
+  animateReorder(list, () => {
+    list.innerHTML = (data || []).map((r) => `
+      <li data-key="${r.player_id}" class="${r.player_id === myPlayer.id ? "is-me" : ""}">
+        <span class="rank">${ordinal(r.standing)}</span>
+        <span class="name">${esc(r.display_name)}</span>
+        <span class="score">${fmtPoints(r.total_points)}</span>
+      </li>`).join("") || `<li class="name">No scores yet.</li>`;
+  });
 }
 
 /* ============================================================

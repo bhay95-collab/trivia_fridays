@@ -84,6 +84,11 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/13_readiness_hardening.sql`, copy the whole file, paste, **Run**
 - This keeps media working on player phones, locks media URLs to HTTPS, applies row level security to question media, and makes deactivated people lose access immediately. Safe to re-run any time.
 
+**1.15b Apply the season stats patch.**
+- **SQL Editor** → **New query**
+- Open `sql/14_season_stats.sql`, copy the whole file, paste, **Run**
+- This adds the season badges, the Hall of Fame and Shame records, and the worst-answer-of-the-season ballot (the host nominates from the answer review, everyone gets one movable vote). Safe to re-run any time.
+
 **1.16 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 22 people. Benjamin Hay on top with 54.

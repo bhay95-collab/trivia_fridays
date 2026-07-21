@@ -1,5 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, LOGIN_DOMAIN } from "./config.js";
+import { fireConfetti } from "./fx.js";
+import { fetchSeason, badgeChips, renderSeasonRail } from "./season.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -167,11 +169,23 @@ async function showBoard() {
   }
 
   const ranked = withRanks(rows);
-  renderPodium(ranked.slice(0, 3));
-  renderRest(ranked.slice(3), meSlug);
-  renderSpoon(ranked);
 
-  if (meRow && ranked[0] && ranked[0].display_name === meRow.display_name) fireConfetti();
+  // the season layer (badges, halls, howler ballot) fails soft -
+  // a missing RPC never takes the scoreboard down with it
+  let season = { byPlayer: new Map(), groups: [], records: [], howlers: [] };
+  try {
+    season = await fetchSeason(db);
+  } catch (e) {
+    console.error("Season stats unavailable:", e);
+  }
+
+  renderPodium(ranked.slice(0, 3));
+  renderRest(ranked.slice(3), meSlug, season);
+  renderSeasonRail(db, season, ranked);
+
+  if (meRow && ranked[0] && ranked[0].display_name === meRow.display_name) {
+    fireConfetti($("confetti"));
+  }
 
   await loadSuggestions();
 }
@@ -292,25 +306,14 @@ function renderPodium(top) {
   }).join("");
 }
 
-function renderRest(rows, meSlug) {
-  $("rankings").innerHTML = rows.map((r, i) => `
-    <li class="${slugify(r.display_name) === meSlug ? "is-me" : ""}"
-        style="animation-delay:${0.6 + i * 0.04}s">
+function renderRest(rows, meSlug, season) {
+  $("rankings").innerHTML = rows.map((r) => `
+    <li class="${slugify(r.display_name) === meSlug ? "is-me" : ""}">
       <span class="rank">${ordinal(r.rank)}</span>
-      <span class="name">${esc(r.display_name)}</span>
+      <span class="name">${esc(r.display_name)}${badgeChips(season, r.player_id)}</span>
       <span class="played">${r.weeks_played} quizzes</span>
       <span class="score">${fmt(r.total_points)}</span>
     </li>`).join("");
-}
-
-function renderSpoon(ranked) {
-  const played = ranked.filter((r) => r.weeks_played > 0);
-  if (played.length < 4) return;
-  const last = played[played.length - 1];
-  const el = $("spoon");
-  el.hidden = false;
-  el.innerHTML = `<b>Wooden Spoon:</b> ${esc(last.display_name)} — ${fmt(last.total_points)} points
-    across ${last.weeks_played} quizzes. There is nowhere to go but up.`;
 }
 
 /* ============================================================
@@ -325,28 +328,4 @@ const slugify = (n) => n.normalize("NFKD").replace(/[^A-Za-z ]/g, "")
 function ordinal(n) {
   const s = ["th", "st", "nd", "rd"], v = n % 100;
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
-}
-
-function fireConfetti() {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const cv = $("confetti"), ctx = cv.getContext("2d");
-  cv.width = innerWidth; cv.height = innerHeight;
-  const colors = ["#FF2D95", "#22E3E0", "#FFC531", "#FFF1DC"];
-  const bits = Array.from({ length: 140 }, () => ({
-    x: Math.random() * cv.width, y: -20 - Math.random() * cv.height,
-    r: 3 + Math.random() * 5, vy: 2 + Math.random() * 3,
-    vx: -1 + Math.random() * 2, a: Math.random() * Math.PI,
-    c: colors[(Math.random() * colors.length) | 0]
-  }));
-  let frames = 0;
-  (function tick() {
-    ctx.clearRect(0, 0, cv.width, cv.height);
-    for (const b of bits) {
-      b.y += b.vy; b.x += b.vx; b.a += 0.1;
-      ctx.fillStyle = b.c;
-      ctx.fillRect(b.x, b.y, b.r, b.r * 2.2 * Math.abs(Math.cos(b.a)));
-    }
-    if (++frames < 320) requestAnimationFrame(tick);
-    else ctx.clearRect(0, 0, cv.width, cv.height);
-  })();
 }

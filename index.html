@@ -6,27 +6,36 @@
 <title>Trivia Fridays</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Barlow:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body class="page-board">
 
+<a class="skip-link" href="#main">Skip to content</a>
 <div class="bulbs" aria-hidden="true"></div>
 
-<nav class="site-nav">
-  <a href="index.html" class="nav-link is-active">Leaderboard</a>
-  <a href="poll.html" class="nav-link">Poll</a>
-  <a href="play.html" class="nav-link">Play</a>
-  <a href="host.html" class="nav-link" id="nav-host" hidden>Host</a>
-  <a href="present.html" class="nav-link" id="nav-present" hidden>Present</a>
-  <a href="admin.html" class="nav-link" id="nav-admin" hidden>Admin</a>
-</nav>
+<header class="deck">
+  <a href="index.html" class="deck-brand"><span>Trivia</span><span>Fridays</span></a>
+  <nav class="deck-nav" aria-label="Main">
+    <a href="index.html" class="nav-link is-active">Leaderboard</a>
+    <a href="poll.html" class="nav-link">Poll</a>
+    <a href="play.html" class="nav-link">Play</a>
+    <a href="host.html" class="nav-link" id="nav-host" hidden>Host</a>
+    <a href="present.html" class="nav-link" id="nav-present" hidden>Present</a>
+    <a href="admin.html" class="nav-link" id="nav-admin" hidden>Admin</a>
+  </nav>
+  <button type="button" class="sound-toggle" id="sound-toggle" aria-pressed="false">Sound off</button>
+</header>
 
 <header class="masthead">
+  <div class="marquee-sign">
+    <h1 class="wordmark"><span>Trivia</span><span>Fridays</span></h1>
+  </div>
   <p class="eyebrow">Every Friday · winner takes nothing</p>
-  <h1 class="wordmark"><span>Trivia</span><span>Fridays</span></h1>
   <p class="tagline" id="tagline">Loading the scoreboard…</p>
 </header>
+
+<main id="main">
 
 <!-- ================= SIGN IN ================= -->
 <section id="view-auth" class="view card-stage" hidden>
@@ -68,35 +77,73 @@
     <button id="sign-out" class="btn btn-ghost">Sign out</button>
   </div>
 
-  <div class="podium" id="podium"></div>
+  <div class="board-grid">
 
-  <ol class="rankings" id="rankings"></ol>
+    <div class="board-main">
+      <div class="stage">
+        <span class="stage-label">Season standings</span>
+        <div class="podium" id="podium"></div>
+      </div>
 
-  <div class="spoon" id="spoon" hidden></div>
+      <div class="screen">
+        <ol class="rankings" id="rankings"></ol>
+      </div>
 
-  <p class="rule">Ranked on total points across the season. Show up, score up.</p>
+      <p class="rule">Ranked on total points across the season. Show up, score up.</p>
+    </div>
 
-  <section class="panel">
-    <h2 class="panel-title">Topic suggestions</h2>
-    <p class="hint">Drop an idea in the pool. The host picks a few for the ballot each week.</p>
+    <aside class="board-rail">
 
-    <form id="suggest-form" class="inline-form">
-      <label class="field">
-        <span>Your idea</span>
-        <input id="suggest-input" type="text" placeholder="e.g. 90s one-hit wonders" autocomplete="off" maxlength="120">
-      </label>
-      <button type="submit" class="btn btn-primary">Add</button>
-    </form>
-    <p class="error" id="suggest-error" hidden></p>
+      <div class="spoon" id="spoon" hidden></div>
 
-    <ul class="suggestion-list" id="suggestion-list">
-      <li class="table-empty">Loading…</li>
-    </ul>
-  </section>
+      <section class="panel" id="fame-panel" hidden>
+        <h2 class="panel-title">Hall of Fame</h2>
+        <ul class="hall-list" id="hall-fame"></ul>
+      </section>
+
+      <section class="panel panel-shame" id="shame-panel" hidden>
+        <h2 class="panel-title">Hall of Shame</h2>
+        <ul class="hall-list" id="hall-shame"></ul>
+
+        <div id="howler-block" hidden>
+          <p class="hint">Worst answer of the season. The room decides. One vote each, change it whenever.</p>
+          <ul class="howler-list" id="howler-list"></ul>
+          <p class="error" id="howler-error" hidden></p>
+        </div>
+      </section>
+
+      <section class="panel" id="badge-panel" hidden>
+        <h2 class="panel-title">Badge case</h2>
+        <ul class="badge-case" id="badge-case"></ul>
+      </section>
+
+      <section class="panel">
+        <h2 class="panel-title">Topic suggestions</h2>
+        <p class="hint">Drop an idea in the pool. The host picks a few for the ballot each week.</p>
+
+        <form id="suggest-form" class="inline-form">
+          <label class="field">
+            <span>Your idea</span>
+            <input id="suggest-input" type="text" placeholder="e.g. 90s one-hit wonders" autocomplete="off" maxlength="120">
+          </label>
+          <button type="submit" class="btn btn-primary">Add</button>
+        </form>
+        <p class="error" id="suggest-error" hidden></p>
+
+        <ul class="suggestion-list" id="suggestion-list">
+          <li class="table-empty">Loading…</li>
+        </ul>
+      </section>
+
+    </aside>
+  </div>
 </section>
+
+</main>
 
 <canvas id="confetti" aria-hidden="true"></canvas>
 
+<script type="module" src="sound.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>
