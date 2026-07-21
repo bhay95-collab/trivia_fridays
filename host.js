@@ -1,6 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { normalizeMediaEntry } from "./media-utils.js";
+import { isSafeMediaUrl, normalizeMediaEntry } from "./media-utils.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -26,6 +26,7 @@ let submissionsTimer = null; // polls final-submission status while the quiz is 
       .from("players")
       .select("id, display_name, is_admin")
       .eq("auth_id", session.user.id)
+      .eq("is_active", true)
       .maybeSingle();
 
     if (error || !me) return locked("Sign in on the leaderboard first, then come back here.");
@@ -80,6 +81,8 @@ async function findWeeks() {
 
   const presentLink = $("nav-present");
   if (presentLink) presentLink.hidden = false;
+  const hostLink = $("nav-host");
+  if (hostLink) hostLink.hidden = false;
 
   show("view-host");
   $("tagline").textContent = "Your quiz";
@@ -489,7 +492,7 @@ function syncCardFromDOM(clientId) {
   q.media = mediaRows.map((row) => normalizeMediaEntry({
     id: row.dataset.mediaId || null,
     media_type: row.querySelector(".q-media-type").value,
-    source_type: row.querySelector(".q-media-source").value,
+    source_type: "url",
     url: row.querySelector(".q-media-url").value,
     caption: row.querySelector(".q-media-caption").value,
     sort_order: Number(row.querySelector(".q-media-sort").value || 0),
@@ -624,20 +627,13 @@ function mediaRowHTML(media, index, canEdit) {
           </select>
         </label>
         <label class="field field-narrow">
-          <span>Source</span>
-          <select class="q-media-source" ${canEdit ? "" : "disabled"}>
-            <option value="url" ${media.source_type === "url" ? "selected" : ""}>URL</option>
-            <option value="upload" ${media.source_type === "upload" ? "selected" : ""}>Upload</option>
-          </select>
-        </label>
-        <label class="field field-narrow">
           <span>Order</span>
           <input type="number" class="q-media-sort" min="0" step="1" value="${Number(media.sort_order || index)}" ${canEdit ? "" : "disabled"}>
         </label>
       </div>
       <label class="field">
-        <span>URL</span>
-        <input type="text" class="q-media-url" value="${esc(media.url || "")}" placeholder="https://..." ${canEdit ? "" : "disabled"}>
+        <span>HTTPS URL</span>
+        <input type="url" class="q-media-url" value="${esc(media.url || "")}" placeholder="https://..." ${canEdit ? "" : "disabled"}>
       </label>
       <label class="field">
         <span>Caption</span>
@@ -759,6 +755,13 @@ async function saveQuestion(clientId) {
   const q = questions.find((x) => x.clientId === clientId);
   const err = $("host-error");
   err.hidden = true;
+
+  const invalidMedia = (q.media || []).find((m) => m.url && !isSafeMediaUrl(m.url));
+  if (invalidMedia) {
+    err.textContent = "Media links must be full HTTPS URLs.";
+    err.hidden = false;
+    return;
+  }
 
   const { data, error } = await db.rpc("host_save_question", {
     p_question_id: q.id,

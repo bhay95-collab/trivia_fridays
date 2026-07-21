@@ -31,6 +31,7 @@ let lastBrowseSig = null; // skip re-rendering the browse view when nothing actu
       .from("players")
       .select("id, display_name, is_admin")
       .eq("auth_id", session.user.id)
+      .eq("is_active", true)
       .maybeSingle();
 
     if (error || !me) return locked("Sign in on the leaderboard first, then come back here.");

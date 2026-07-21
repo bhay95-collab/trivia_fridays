@@ -120,8 +120,8 @@ create table question_media (
   id           uuid primary key default gen_random_uuid(),
   question_id  uuid not null references questions(id) on delete cascade,
   media_type   text not null check (media_type in ('audio','image','video')),
-  source_type  text not null default 'url' check (source_type in ('url','upload')),
-  url          text not null,
+  source_type  text not null default 'url' check (source_type = 'url'),
+  url          text not null check (url ~* '^https://'),
   caption      text,
   sort_order   int not null default 0,
   created_at   timestamptz not null default now()
@@ -161,12 +161,12 @@ create table week_scores (
 -- Current player's row id, derived from the logged-in auth user.
 create or replace function me() returns uuid
 language sql stable security definer set search_path = public as $$
-  select id from players where auth_id = auth.uid()
+  select id from players where auth_id = auth.uid() and is_active
 $$;
 
 create or replace function is_admin() returns boolean
 language sql stable security definer set search_path = public as $$
-  select coalesce((select is_admin from players where auth_id = auth.uid()), false)
+  select coalesce((select is_admin from players where auth_id = auth.uid() and is_active), false)
 $$;
 
 create or replace function is_host_of(p_week uuid) returns boolean
@@ -174,7 +174,7 @@ language sql stable security definer set search_path = public as $$
   select exists (
     select 1 from weeks w
     join players p on p.id = w.host_id
-    where w.id = p_week and p.auth_id = auth.uid()
+    where w.id = p_week and p.auth_id = auth.uid() and p.is_active
   ) or is_admin()
 $$;
 
@@ -397,6 +397,7 @@ alter table poll_options      enable row level security;
 alter table poll_votes        enable row level security;
 alter table questions         enable row level security;
 alter table answer_keys       enable row level security;
+alter table question_media   enable row level security;
 alter table responses         enable row level security;
 alter table week_scores       enable row level security;
 
@@ -431,6 +432,16 @@ create policy q_host      on questions for all
 
 -- Answer keys: no player policy at all. Host and admin only.
 create policy ak_host on answer_keys for all
+  using (is_host_of((select week_id from questions where id = question_id)))
+  with check (is_host_of((select week_id from questions where id = question_id)));
+
+-- Media follows the same visibility as the question it belongs to.
+create policy qm_read_visible on question_media for select
+  using (exists (
+    select 1 from questions q
+    where q.id = question_id and (q.status in ('open','locked') or is_host_of(q.week_id))
+  ));
+create policy qm_host on question_media for all
   using (is_host_of((select week_id from questions where id = question_id)))
   with check (is_host_of((select week_id from questions where id = question_id)));
 

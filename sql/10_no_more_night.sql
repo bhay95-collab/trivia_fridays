@@ -273,6 +273,8 @@ $$;
 
 -- ---------- from 06_quiz_functions.sql ----------
 
+drop function if exists host_save_question(uuid, uuid, text, text, numeric, jsonb, text, text, text[]);
+
 create or replace function host_save_question(
   p_question_id  uuid,
   p_week_id      uuid,
@@ -282,7 +284,8 @@ create or replace function host_save_question(
   p_options      jsonb default null,
   p_correct_key  text default null,
   p_correct_text text default null,
-  p_alternates   text[] default '{}'
+  p_alternates   text[] default '{}',
+  p_media        jsonb default '[]'::jsonb
 )
 returns table(id uuid, q_number int)
 language plpgsql security definer set search_path = public as $$
@@ -292,6 +295,9 @@ declare
   v_q_number       int;
   v_existing_week  uuid;
   v_keys           text[];
+  v_media_item     jsonb;
+  v_media_type     text;
+  v_media_url      text;
 begin
   if not is_host_of(p_week_id) then
     raise exception 'Only the host can edit questions.';
@@ -389,6 +395,34 @@ begin
   set correct_key  = excluded.correct_key,
       correct_text = excluded.correct_text,
       alternates   = excluded.alternates;
+
+  delete from question_media where question_id = v_id;
+  if p_media is not null and jsonb_typeof(p_media) = 'array' then
+    for v_media_item in select * from jsonb_array_elements(p_media)
+    loop
+      v_media_url := trim(coalesce(v_media_item->>'url', ''));
+      v_media_type := lower(coalesce(v_media_item->>'media_type', 'image'));
+
+      if v_media_url <> '' then
+        if v_media_type not in ('audio', 'image', 'video') then
+          raise exception 'Media must be audio, image, or video.';
+        end if;
+        if v_media_url !~* '^https://' then
+          raise exception 'Media links must be full HTTPS URLs.';
+        end if;
+
+        insert into question_media (question_id, media_type, source_type, url, caption, sort_order)
+        values (
+          v_id,
+          v_media_type,
+          'url',
+          v_media_url,
+          coalesce(v_media_item->>'caption', ''),
+          coalesce((v_media_item->>'sort_order')::int, 0)
+        );
+      end if;
+    end loop;
+  end if;
 
   return query select v_id, v_q_number;
 end;
@@ -559,6 +593,8 @@ begin
 end;
 $$;
 
+drop function if exists live_state(uuid);
+
 create or replace function live_state(p_week_id uuid)
 returns table(
   week_status      text,
@@ -574,7 +610,8 @@ returns table(
   correct_key      text,
   correct_text     text,
   my_verdict       text,
-  my_points        numeric
+  my_points        numeric,
+  media            jsonb
 )
 language plpgsql stable security definer set search_path = public as $$
 declare
@@ -599,7 +636,16 @@ begin
   if v_submitted then
     return query
       select v_week_status, v_total, true, q.id, q.q_number, q.q_type, q.prompt, q.options, q.points,
-             r.answer_raw, k.correct_key, k.correct_text, r.verdict, r.points_awarded
+             r.answer_raw, k.correct_key, k.correct_text, r.verdict, r.points_awarded,
+             coalesce((select jsonb_agg(jsonb_build_object(
+               'id', m.id,
+               'media_type', m.media_type,
+               'source_type', m.source_type,
+               'url', m.url,
+               'caption', m.caption,
+               'sort_order', m.sort_order
+             ) order by m.sort_order, m.created_at)
+             from question_media m where m.question_id = q.id), '[]'::jsonb)
       from questions q
       left join responses r on r.question_id = q.id and r.player_id = v_me
       left join answer_keys k on k.question_id = q.id
@@ -612,13 +658,22 @@ begin
 
   if v_open_count = 0 then
     return query select v_week_status, v_total, false, null::uuid, null::int, null::text, null::text, null::jsonb,
-                        null::numeric, null::text, null::text, null::text, null::text, null::numeric;
+                        null::numeric, null::text, null::text, null::text, null::text, null::numeric, null::jsonb;
     return;
   end if;
 
   return query
     select v_week_status, v_total, false, q.id, q.q_number, q.q_type, q.prompt, q.options, q.points,
-           r.answer_raw, null::text, null::text, null::text, null::numeric
+           r.answer_raw, null::text, null::text, null::text, null::numeric,
+           coalesce((select jsonb_agg(jsonb_build_object(
+             'id', m.id,
+             'media_type', m.media_type,
+             'source_type', m.source_type,
+             'url', m.url,
+             'caption', m.caption,
+             'sort_order', m.sort_order
+           ) order by m.sort_order, m.created_at)
+           from question_media m where m.question_id = q.id), '[]'::jsonb)
     from questions q
     left join responses r on r.question_id = q.id and r.player_id = v_me
     where q.week_id = p_week_id and q.status = 'open'

@@ -20,6 +20,7 @@ let myPlayerId = null;
       .from("players")
       .select("id, display_name, is_admin")
       .eq("auth_id", session.user.id)
+      .eq("is_active", true)
       .maybeSingle();
 
     if (error || !me) return locked("This page is for admins only.");
@@ -34,6 +35,8 @@ let myPlayerId = null;
     if (hostLink) hostLink.hidden = false; // admins can always reach the host page
     const presentLink = $("nav-present");
     if (presentLink) presentLink.hidden = false;
+    const adminLink = $("nav-admin");
+    if (adminLink) adminLink.hidden = false;
 
     await loadPeople();
     await loadWeeks();

@@ -148,6 +148,8 @@ $$;
 -- Creates a question when p_question_id is null, otherwise updates
 -- it. The question and its answer key are written together so they
 -- can never end up out of step with each other.
+drop function if exists host_save_question(uuid, uuid, text, text, numeric, jsonb, text, text, text[]);
+
 create or replace function host_save_question(
   p_question_id  uuid,
   p_week_id      uuid,
@@ -169,6 +171,8 @@ declare
   v_existing_week  uuid;
   v_keys           text[];
   v_media_item     jsonb;
+  v_media_type     text;
+  v_media_url      text;
 begin
   if not is_host_of(p_week_id) then
     raise exception 'Only the host can edit questions.';
@@ -271,13 +275,23 @@ begin
   if p_media is not null and jsonb_typeof(p_media) = 'array' then
     for v_media_item in select * from jsonb_array_elements(p_media)
     loop
-      if coalesce(v_media_item->>'url', '') <> '' then
+      v_media_url := trim(coalesce(v_media_item->>'url', ''));
+      v_media_type := lower(coalesce(v_media_item->>'media_type', 'image'));
+
+      if v_media_url <> '' then
+        if v_media_type not in ('audio', 'image', 'video') then
+          raise exception 'Media must be audio, image, or video.';
+        end if;
+        if v_media_url !~* '^https://' then
+          raise exception 'Media links must be full HTTPS URLs.';
+        end if;
+
         insert into question_media (question_id, media_type, source_type, url, caption, sort_order)
         values (
           v_id,
-          lower(coalesce(v_media_item->>'media_type', 'image')),
-          lower(coalesce(v_media_item->>'source_type', 'url')),
-          coalesce(v_media_item->>'url', ''),
+          v_media_type,
+          'url',
+          v_media_url,
           coalesce(v_media_item->>'caption', ''),
           coalesce((v_media_item->>'sort_order')::int, 0)
         );

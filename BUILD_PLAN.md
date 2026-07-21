@@ -14,12 +14,15 @@ What is already working well:
 - Players can answer multiple-choice and free-text questions.
 - The UI is already structured around host, play, poll, and present views.
 
-What is missing for the new requests:
-- There is no dedicated, first-class “new poll” experience beyond the existing ballot flow.
-- There is no media support in quiz questions.
-- Media is not yet rendered on the play or present screens.
+Readiness gaps now covered by the implementation:
+- Player live state returns media again after the final-submission SQL changes.
+- Deactivated people are no longer treated as active players/admins/hosts by the core database helpers.
+- Question media is URL-only, HTTPS-only, escaped before rendering, and protected by RLS.
+- Privileged nav links start hidden until auth and role checks pass.
 
-Workspace diagnostics currently show no JavaScript errors.
+Remaining optional scope:
+- There is no dedicated, first-class “new poll” experience beyond the existing weekly topic ballot.
+- Supabase Storage uploads are not implemented; media uses HTTPS URLs only.
 
 ---
 
@@ -95,22 +98,21 @@ Add a new table such as:
   - id
   - question_id
   - media_type (audio, image, video)
-  - source_type (url, upload)
+  - source_type (url)
   - url
-  - storage_path
   - caption
   - sort_order
 
 ### Media handling strategy
-Support two paths:
-- Quick MVP: accept remote URLs for audio/image/video.
-- Better production version: allow uploads to Supabase Storage and store the public URL.
+Current implementation:
+- Accept full HTTPS URLs for audio/image/video.
+- Treat Supabase Storage uploads as future work.
 
 ### Host-side UI plan
 Extend the existing question card builder in host.html and host.js to include:
 - a media section per question
 - a media type selector: audio, image, video
-- a URL or upload field
+- an HTTPS URL field
 - preview before saving
 - a remove action
 

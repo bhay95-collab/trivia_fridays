@@ -153,7 +153,13 @@ async function showBoard() {
       .from("players")
       .select("id, is_admin")
       .eq("auth_id", user.id)
+      .eq("is_active", true)
       .maybeSingle();
+    if (!me) {
+      await db.auth.signOut();
+      location.reload();
+      return;
+    }
     if (me) {
       myPlayerId = me.id;
       await initNav(me.id, me.is_admin);

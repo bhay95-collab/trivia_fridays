@@ -28,6 +28,7 @@ let fallbackTimer = null;
       .from("players")
       .select("id, display_name, is_admin")
       .eq("auth_id", session.user.id)
+      .eq("is_active", true)
       .maybeSingle();
 
     if (error || !me) return locked("Sign in on the leaderboard first, then come back here.");
@@ -101,6 +102,8 @@ async function findWeeks() {
 
   const hostLink = $("nav-host");
   if (hostLink) hostLink.hidden = false;
+  const presentLink = $("nav-present");
+  if (presentLink) presentLink.hidden = false;
 
   show("view-present");
   await loadWeek(data[0].id);

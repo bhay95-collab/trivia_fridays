@@ -168,7 +168,8 @@ returns table(
   correct_key      text,
   correct_text     text,
   my_verdict       text,
-  my_points        numeric
+  my_points        numeric,
+  media            jsonb
 )
 language plpgsql stable security definer set search_path = public as $$
 declare
@@ -193,7 +194,16 @@ begin
   if v_submitted then
     return query
       select v_week_status, v_total, true, q.id, q.q_number, q.q_type, q.prompt, q.options, q.points,
-             r.answer_raw, k.correct_key, k.correct_text, r.verdict, r.points_awarded
+             r.answer_raw, k.correct_key, k.correct_text, r.verdict, r.points_awarded,
+             coalesce((select jsonb_agg(jsonb_build_object(
+               'id', m.id,
+               'media_type', m.media_type,
+               'source_type', m.source_type,
+               'url', m.url,
+               'caption', m.caption,
+               'sort_order', m.sort_order
+             ) order by m.sort_order, m.created_at)
+             from question_media m where m.question_id = q.id), '[]'::jsonb)
       from questions q
       left join responses r on r.question_id = q.id and r.player_id = v_me
       left join answer_keys k on k.question_id = q.id
@@ -206,13 +216,22 @@ begin
 
   if v_open_count = 0 then
     return query select v_week_status, v_total, false, null::uuid, null::int, null::text, null::text, null::jsonb,
-                        null::numeric, null::text, null::text, null::text, null::text, null::numeric;
+                        null::numeric, null::text, null::text, null::text, null::text, null::numeric, null::jsonb;
     return;
   end if;
 
   return query
     select v_week_status, v_total, false, q.id, q.q_number, q.q_type, q.prompt, q.options, q.points,
-           r.answer_raw, null::text, null::text, null::text, null::numeric
+           r.answer_raw, null::text, null::text, null::text, null::numeric,
+           coalesce((select jsonb_agg(jsonb_build_object(
+             'id', m.id,
+             'media_type', m.media_type,
+             'source_type', m.source_type,
+             'url', m.url,
+             'caption', m.caption,
+             'sort_order', m.sort_order
+           ) order by m.sort_order, m.created_at)
+           from question_media m where m.question_id = q.id), '[]'::jsonb)
     from questions q
     left join responses r on r.question_id = q.id and r.player_id = v_me
     where q.week_id = p_week_id and q.status = 'open'

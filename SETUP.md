@@ -79,11 +79,16 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/12_leaderboard_view_security.sql`, copy the whole file, paste, **Run**
 - Views default to running as whoever created them rather than the person asking, silently bypassing row level security. Changes nothing visible today, closes the gap for later. Safe to re-run any time.
 
-**1.15 Check it worked.**
-- **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
-- You should see 21 people. Benjamin Hay on top with 54.
+**1.15 Apply the readiness hardening patch.**
+- **SQL Editor** → **New query**
+- Open `sql/13_readiness_hardening.sql`, copy the whole file, paste, **Run**
+- This keeps media working on player phones, locks media URLs to HTTPS, applies row level security to question media, and makes deactivated people lose access immediately. Safe to re-run any time.
 
-**1.16 Grab your two keys.**
+**1.16 Check it worked.**
+- **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
+- You should see 22 people. Benjamin Hay on top with 54.
+
+**1.17 Grab your two keys.**
 - Left sidebar → **Project Settings** (cog) → **API Keys**
 - Copy the **Project URL** and the **anon / public** key. Keep the tab open.
 
@@ -113,7 +118,7 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 
 **3.3 Upload the files.**
 - On the empty repo page, click **uploading an existing file**
-- Drag in: `index.html`, `app.js`, `styles.css`, `config.js`, `admin.html`, `admin.js`, `poll.html`, `poll.js`, `host.html`, `host.js`, `play.html`, `play.js`, `present.html`, `present.js`
+- Drag in: `index.html`, `app.js`, `styles.css`, `config.js`, `media-utils.js`, `admin.html`, `admin.js`, `poll.html`, `poll.js`, `host.html`, `host.js`, `play.html`, `play.js`, `present.html`, `present.js`
 - Then drag the whole `sql` folder in too (harmless, and it keeps everything together)
 - Click **Commit changes**
 
@@ -133,6 +138,9 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 Everything below is done from the site, not raw SQL. There's a small nav bar
 on every page: **Leaderboard**, **Poll**, **Play**, and — only for the
 people entitled to see them — **Host**, **Present** and **Admin**.
+
+**Pre-Friday checklist**
+Before people start voting, make sure Admin page → **Quizzes** has an upcoming quiz row. Create one if there is no `draft`, `polling`, `building`, or `live` quiz, assign the host, then have the host build the ballot on the Host page. Poll, Play and Present intentionally stay quiet until that quiz exists and moves through the flow.
 
 **Suggesting a topic**
 Anyone signed in can drop an idea in the pool from the leaderboard page.
@@ -160,6 +168,8 @@ multiple choice or free text, write the prompt, and set the points (1 by
 default — make a bonus round worth more if you like). Multiple choice needs
 2 to 6 options with one marked correct. Free text needs a correct answer,
 plus any alternates you want to accept ("JFK" as well as "John F Kennedy").
+Media can be attached to a question with a full `https://` URL for an image,
+audio clip, or video. Uploads are not supported yet.
 
 For every free text question, use **Try an answer** before the quiz — type
 what you think someone might write and it tells you straight away whether
@@ -243,5 +253,4 @@ Live in about a minute. Hard refresh your phone if you see the old version.
 ## Still to build
 
 - **Stage 5** — the chaos: sounds, streak badges, animated overtakes, hall of shame
-
-The database schema already covers all of it, so no rebuilding later.
+- First-class media uploads to Supabase Storage, if URLs become too fiddly.
