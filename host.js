@@ -70,7 +70,7 @@ async function findWeeks() {
   if (!data || data.length === 0) {
     return locked(myPlayer.is_admin
       ? "No quizzes need hosting right now. Create one from the admin page."
-      : "You are not hosting a quiz at the moment.");
+      : "You are not hosting a quiz at the moment — savour the peace, it's your turn again soon enough.");
   }
 
   if (myPlayer.is_admin && data.length > 1) {
@@ -217,7 +217,7 @@ async function loadSuggestions() {
         : canEditBallot
           ? `<button class="btn btn-small" data-action="add-suggestion" data-id="${s.id}">Add to ballot</button>`
           : ""}
-    </li>`).join("") || `<li class="table-empty">No suggestions yet.</li>`;
+    </li>`).join("") || `<li class="table-empty">No suggestions yet. You'll have to think of a topic yourself.</li>`;
 }
 
 $("host-suggestion-list").addEventListener("click", async (e) => {
@@ -296,7 +296,7 @@ async function loadBallot() {
         </div>
         ${canEditBallot ? `<button class="btn btn-small" data-action="remove-option" data-id="${o.id}">Remove</button>` : ""}
       </li>`;
-  }).join("") || `<li class="table-empty">Nothing on the ballot yet.</li>`;
+  }).join("") || `<li class="table-empty">Nothing on the ballot yet. Democracy needs at least two candidates.</li>`;
 }
 
 $("ballot-list").addEventListener("click", async (e) => {

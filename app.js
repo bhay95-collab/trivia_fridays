@@ -242,7 +242,7 @@ async function loadSuggestions() {
         ${s.used ? `<span class="badge badge-left">Used</span>` : ""}
       </div>
       ${s.player_id === myPlayerId ? `<button class="btn btn-small" data-id="${s.id}">Remove</button>` : ""}
-    </li>`).join("") || `<li class="table-empty">No suggestions yet. Add the first one.</li>`;
+    </li>`).join("") || `<li class="table-empty">No suggestions yet. Someone has to go first.</li>`;
 }
 
 $("suggest-form").addEventListener("submit", async (e) => {

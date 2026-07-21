@@ -93,7 +93,7 @@ async function findWeeks() {
   if (data.length === 0) {
     return locked(myPlayer.is_admin
       ? "No quiz is ready to present right now."
-      : "You don't have a quiz ready to present.");
+      : "You don't have a quiz ready to present — the big screen can wait.");
   }
 
   if (myPlayer.is_admin && data.length > 1) {
@@ -430,7 +430,7 @@ async function loadOverridePanel(questionId) {
           ${noms.has(r.id) ? "On the ballot" : "Howler"}
         </button>` : ""}
       </div>
-    </li>`).join("") || `<li class="table-empty">Nobody answered this one.</li>`;
+    </li>`).join("") || `<li class="table-empty">Nobody answered this one. A rare moment of total consensus.</li>`;
 }
 
 $("override-list").addEventListener("click", async (e) => {

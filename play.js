@@ -99,7 +99,7 @@ async function findAndEnter() {
   const week = !error && data && data[0];
 
   if (!week) {
-    locked("No quiz is live right now. This page updates the moment the host starts one.");
+    locked("No quiz is live right now. This page updates the moment the host starts one — no refreshing required, no matter how hard you're tempted.");
     findTimer = setTimeout(findAndEnter, 4000);
     return;
   }
@@ -177,7 +177,7 @@ function render() {
 
   if (questions.length === 0) {
     $("waiting-block").hidden = false;
-    $("waiting-message").textContent = "Waiting for the host to open the first question…";
+    $("waiting-message").textContent = "Waiting for the host to open the first question… they're stalling for effect.";
     $("standings-panel").hidden = false;
     return;
   }
