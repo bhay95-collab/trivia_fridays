@@ -3,6 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, LOGIN_DOMAIN } from "./config.js";
 import { fireConfetti, countUp } from "./fx.js";
 import { fetchSeason, badgeChips, streakChip, renderSeasonRail } from "./season.js";
 import { rivalryLine, headToHead } from "./needle.js";
+import { loadMe, clearMe } from "./auth.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -136,6 +137,7 @@ async function signIn() {
 }
 
 $("sign-out").addEventListener("click", async () => {
+  clearMe();
   await db.auth.signOut();
   location.reload();
 });
@@ -161,7 +163,7 @@ async function showBoard(session) {
     .order("total_points", { ascending: false })
     .order("display_name");
   const meReq = user
-    ? db.from("players").select("id, is_admin").eq("auth_id", user.id).eq("is_active", true).maybeSingle()
+    ? loadMe(db, { user })
     : Promise.resolve({ data: null });
   // fails soft: a missing RPC hides its panel, never breaks the board
   const seasonReq = fetchSeason(db).catch((e) => {
@@ -197,6 +199,7 @@ async function showBoard(session) {
   if (user) {
     const { data: me } = await meReq;
     if (!me) {
+      clearMe();
       await db.auth.signOut();
       location.reload();
       return;

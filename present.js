@@ -4,6 +4,7 @@ import { mediaRendererMarkup } from "./media-utils.js";
 import { sfx } from "./sound.js";
 import { fireConfetti, delay, reducedMotion, countUp, podiumSunburst } from "./fx.js";
 import { REACTION_EVENT, reactionTopic, floatReaction } from "./reactions.js";
+import { loadMe } from "./auth.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -29,12 +30,7 @@ let clearSunburst = null;   // removes the winner sunburst on the next screen ch
     const { data: { session } } = await db.auth.getSession();
     if (!session) return locked("Sign in on the leaderboard first, then come back here.");
 
-    const { data: me, error } = await db
-      .from("players")
-      .select("id, display_name, is_admin")
-      .eq("auth_id", session.user.id)
-      .eq("is_active", true)
-      .maybeSingle();
+    const { data: me, error } = await loadMe(db, session);
 
     if (error || !me) return locked("Sign in on the leaderboard first, then come back here.");
     myPlayer = me;

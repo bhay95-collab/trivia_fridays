@@ -6,6 +6,7 @@ import { animateReorder, reducedMotion, delay, streakShock } from "./fx.js";
 import { streakSegments, streakLine, streakBreakLine, STREAK_MIN } from "./streaks.js";
 import { jokerPoints } from "./jokers.js";
 import { REACTIONS, REACTION_EVENT, reactionTopic } from "./reactions.js";
+import { loadMe } from "./auth.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -39,17 +40,15 @@ const orderState = {};      // per-question working arrangement for "order" ques
     const { data: { session } } = await db.auth.getSession();
     if (!session) return locked("Sign in on the leaderboard first, then come back here.");
 
-    const { data: me, error } = await db
-      .from("players")
-      .select("id, display_name, is_admin")
-      .eq("auth_id", session.user.id)
-      .eq("is_active", true)
-      .maybeSingle();
+    const { data: me, error } = await loadMe(db, session);
 
     if (error || !me) return locked("Sign in on the leaderboard first, then come back here.");
     myPlayer = me;
 
-    await initNav(me.id, me.is_admin);
+    // The nav's host/present links need a separate lookup, but it's not
+    // on the path to the live quiz - let it resolve alongside instead of
+    // holding the screen.
+    initNav(me.id, me.is_admin);
     await findAndEnter();
   } catch (err) {
     locked("Could not reach the database. Check config.js.");
