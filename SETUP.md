@@ -124,6 +124,11 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/21_media_storage.sql`, copy the whole file, paste, **Run**
 - This creates a `question-media` Storage bucket so a host can upload a picture, clip, or track straight from their device when building a question, instead of only being able to paste a link. Until you run this, the "Upload" button in the question builder will fail — pasting an HTTPS link still works either way. Safe to re-run any time.
 
+**1.15j Let admins delete a closed quiz.**
+- **SQL Editor** → **New query**
+- Open `sql/23_delete_any_quiz.sql`, copy the whole file, paste, **Run**
+- Before this, **Delete** on the Quizzes admin page only worked for a quiz that hadn't closed yet. This lets an admin delete any quiz, including a closed one — it wipes that quiz's questions, answers, and everyone's scores for that night, but doesn't touch any other quiz's scores or streaks. Safe to re-run any time.
+
 **1.16 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 22 people. Benjamin Hay on top with 54.
@@ -288,8 +293,10 @@ scores are kept. **Reactivate** brings them back.
 **Adding a quiz**
 Admin page → **Quizzes** → pick a date, optional title, host → **Create**.
 Change the host any time by picking a new one from the dropdown in the table
-— it saves as soon as you pick. **Delete** removes a quiz that was created
-by mistake; once a quiz is closed it can no longer be deleted.
+— it saves as soon as you pick. **Delete** permanently removes a quiz and
+everything tied to it — its questions, answers, and everyone's scores for
+that night — whether it's still a draft or already closed. Other quizzes'
+scores and streaks are unaffected.
 
 **Making changes to the site**
 Edit the file on GitHub (click the file → pencil icon → Commit), or re-upload it.

@@ -198,7 +198,7 @@ function renderWeeks(weeks) {
       <td><span class="badge badge-status status-${w.status}">${w.status}</span></td>
       <td>
         <button class="btn btn-small" data-action="delete-week" data-id="${w.id}" data-date="${w.quiz_date}"
-          ${w.status === "closed" ? "hidden" : ""}>Delete</button>
+          data-status="${w.status}">Delete</button>
       </td>
     </tr>`).join("") || `<tr><td colspan="5" class="table-empty">No quizzes yet.</td></tr>`;
 
@@ -272,6 +272,12 @@ $("weeks-rows").addEventListener("change", async (e) => {
 $("weeks-rows").addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-action='delete-week']");
   if (!btn) return;
+
+  const isClosed = btn.dataset.status === "closed";
+  const message = isClosed
+    ? `Delete the ${btn.dataset.date} quiz? It's already closed - this permanently wipes its questions, answers, and everyone's scores for that night. Other quizzes' scores and streaks are unaffected.`
+    : `Delete the ${btn.dataset.date} quiz? This can't be undone.`;
+  if (!confirm(message)) return;
 
   const err = $("weeks-error");
   err.hidden = true;
