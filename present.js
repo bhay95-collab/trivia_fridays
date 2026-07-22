@@ -218,8 +218,8 @@ async function enterLive() {
   startReactions();
   // realtime is the primary signal; this just catches a missed event
   fallbackTimer = setInterval(async () => { await reloadQuiz(); renderLive(); }, 15000);
-  meterTicker = setInterval(updateMeter, 2000);
-  updateMeter();
+  meterTicker = setInterval(refreshLiveStatus, 3000);
+  refreshLiveStatus();
 }
 
 async function reloadQuiz() {
@@ -286,9 +286,10 @@ function renderLive() {
     }
 
     $("answer-meter").hidden = false;
+    $("answer-meter").classList.remove("is-complete");
     $("answer-meter-fill").style.transform = "scaleX(0)";
-    $("answer-meter-label").textContent = "";
-    updateMeter();
+    $("answer-meter-label").textContent = "Waiting on answers…";
+    refreshAnswerCue();
   }
 
   $("present-prev").disabled = viewIndex === 0;
@@ -328,23 +329,49 @@ document.addEventListener("keydown", (e) => {
   $("present-next").click();
 });
 
-async function updateMeter() {
+async function refreshLiveStatus() {
   if (!currentWeek || currentWeek.status !== "live") return;
-  const opened = openedQuestions();
-  const q = opened[viewIndex];
 
+  // Final-submission tracker: who's locked their whole card in. Left
+  // against the full active roster on purpose - before ending the quiz
+  // the host wants to know everyone who could play has finished.
   const { data } = await db.rpc("host_live_state", { p_week_id: currentWeek.id });
   const state = Array.isArray(data) ? data[0] : data;
-  const expected = state?.expected_count || 0;
+  $("submitted-meta").textContent =
+    `${state?.submitted_count || 0} of ${state?.expected_count || 0} submitted their final answers`;
 
-  $("submitted-meta").textContent = `${state?.submitted_count || 0} of ${expected} submitted their final answers`;
+  await refreshAnswerCue();
+}
 
-  if (!q) return;
-  const { count } = await db.from("responses").select("id", { count: "exact", head: true }).eq("question_id", q.id);
-  const answered = count || 0;
-  const pct = expected ? Math.min(answered / expected, 1) : 0;
-  $("answer-meter-fill").style.transform = `scaleX(${pct})`;
-  $("answer-meter-label").textContent = `${answered} / ${expected} answered`;
+// Light up once everyone actually in the quiz has answered the question
+// on screen - no running tally. "In the quiz" means people who've
+// answered a question in it, not the whole active roster, so players who
+// aren't here today never hold the cue back. The expected set is taken
+// from the *other* opened questions, so the very first question (room
+// still arriving) doesn't falsely read complete after a single answer.
+async function refreshAnswerCue() {
+  if (!currentWeek || currentWeek.status !== "live") return;
+
+  const meter = $("answer-meter");
+  const opened = openedQuestions();
+  const q = opened[viewIndex];
+  if (!q) { meter.classList.remove("is-complete"); return; }
+
+  const priorIds = opened.map((o) => o.id).filter((id) => id !== q.id);
+  const [priorRes, currentCount] = await Promise.all([
+    priorIds.length
+      ? db.from("responses").select("player_id").in("question_id", priorIds)
+      : Promise.resolve({ data: [] }),
+    db.from("responses").select("id", { count: "exact", head: true }).eq("question_id", q.id),
+  ]);
+
+  const inQuiz = new Set((priorRes.data || []).map((r) => r.player_id)).size;
+  const answered = currentCount.count || 0;
+  const everyoneIn = inQuiz > 0 && answered >= inQuiz;
+
+  meter.classList.toggle("is-complete", everyoneIn);
+  $("answer-meter-fill").style.transform = everyoneIn ? "scaleX(1)" : "scaleX(0)";
+  $("answer-meter-label").textContent = everyoneIn ? "Everyone's answered ✓" : "Waiting on answers…";
 }
 
 function showLiveError(message) {

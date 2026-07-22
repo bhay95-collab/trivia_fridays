@@ -1078,6 +1078,17 @@ body.page-present{ padding-bottom:9.5rem; }
   color:var(--dim); font-size:.78rem; letter-spacing:.06em; white-space:nowrap;
   font-family:var(--font-mono); font-variant-numeric:tabular-nums;
 }
+/* no live tally - the bar sits empty until everyone in the quiz has
+   answered, then fills solid green as a single glanceable cue */
+.answer-meter.is-complete .answer-meter-fill{
+  background:linear-gradient(90deg, #2FBF71, #34E29B);
+}
+.answer-meter.is-complete .answer-meter-label{
+  color:#7BF0B8; font-weight:700;
+}
+.answer-meter.is-complete .answer-meter-bar{
+  border-color:#2FBF71; box-shadow:inset 0 2px 0 rgba(0,0,0,.6), 0 0 14px rgba(47,191,113,.45);
+}
 
 .override-list{ list-style:none; margin:0; padding:0; }
 .override-list li{
