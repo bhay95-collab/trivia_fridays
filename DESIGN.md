@@ -243,3 +243,39 @@ scoreboard (see `app.js: showBoard()`'s try/catch around `fetchSeason`).
 Keep that property when extending the season layer — this app runs
 live in front of a room of people on a Friday, and a stack trace on the
 projector is a worse failure mode than a missing badge case.
+
+## Fun & engagement layer (later session)
+
+| File | Purpose |
+|---|---|
+| `jokers.js` + `sql/17_jokers.sql` | Double-or-nothing stake, pure scoring math (unit tested) |
+| `reactions.js` | Live emoji broadcast + floaters for the shared screen |
+| `needle.js` | Rivalry line + head-to-head copy (unit tested) |
+| `sql/18_status_streaks.sql` | Attendance-streak read RPC |
+| `sql/19_question_types.sql` | True/False, Number, Order grading + save |
+| `sql/20_closest_wins.sql` | Closest-wins resolution folded into finalise |
+
+Material notes so these stay one object, not new inventions:
+
+- **The joker is magenta, never gold.** Gold stays reserved for the two
+  biggest buttons (Start / Reveal). The stake bar and its reveal stamp use
+  magenta (\"act here / this is your move\") and the existing rotated
+  rubber-stamp treatment — a full ring on the jokered row, never a
+  side-tab.
+- **Reactions are ambient and edge-biased.** Floaters rise in the side
+  gutters so they never sit on the question text, are compositor-only
+  (transform/opacity), and are skipped outright under reduced motion, like
+  confetti. They are never written to the database.
+- **Crown, streak flame, and needle read as chips/nudges,** not new
+  panels: the crown sits before the leader's name, the 🔥 streak is a small
+  chip beside the badge chips, and the rivalry line is one cabinet-toned
+  banner under the who-am-I row.
+- **The profile modal is a cabinet card** (gold title tab, recessed screen
+  stat tiles) — the same materials as everything else, opened from a
+  name-as-button, and built only from public aggregates already on the
+  page.
+- **New question types reuse existing materials:** True/False and Order
+  render through the same option cards as multiple choice; the shared
+  screen shows Order items shuffled so it never gives the answer away; a
+  `closest` question shows a dashed \"pending\" reveal row until it settles
+  at finalise.
