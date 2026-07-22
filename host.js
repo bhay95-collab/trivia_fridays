@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { isSafeMediaUrl, normalizeMediaEntry } from "./media-utils.js";
-import { loadMe } from "./auth.js";
+import { loadMe, setupNav } from "./auth.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -28,8 +28,7 @@ let submissionsTimer = null; // polls final-submission status while the quiz is 
     if (error || !me) return locked("Sign in on the leaderboard first, then come back here.");
     myPlayer = me;
 
-    const adminLink = $("nav-admin");
-    if (adminLink) adminLink.hidden = !me.is_admin;
+    setupNav(db, me);
 
     await findWeeks();
   } catch (err) {
@@ -74,11 +73,6 @@ async function findWeeks() {
     $("week-switcher").innerHTML = data.map((w) =>
       `<option value="${w.id}">${fmtDate(w.quiz_date)}${w.title ? " — " + esc(w.title) : ""}</option>`).join("");
   }
-
-  const presentLink = $("nav-present");
-  if (presentLink) presentLink.hidden = false;
-  const hostLink = $("nav-host");
-  if (hostLink) hostLink.hidden = false;
 
   show("view-host");
   $("tagline").textContent = "Your quiz";

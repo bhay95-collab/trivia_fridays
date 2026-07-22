@@ -51,11 +51,74 @@ export async function loadMe(db, session) {
   return res;
 }
 
-// Drop every cached identity in this tab. Call on sign-out so the next
-// person to use the tab is looked up fresh instead of inheriting the
-// last person's row.
+// ============================================================
+// HEADER NAV — resolved once, then held constant across pages.
+//
+// The Host / Present / Admin links start hidden and only show for the
+// people they apply to. Working that out for a non-admin used to mean
+// a `weeks` lookup on every page (are you hosting an open quiz?) -
+// which is exactly why the links flickered on as you moved between
+// pages. Whether you're an admin or a host doesn't change mid-session,
+// so we resolve it once, cache it, and every later page applies it
+// synchronously with no round trip and no flicker.
+// ============================================================
+
+const NAV_KEY = "tf.nav";
+
+function readNav() {
+  try {
+    const raw = sessionStorage.getItem(NAV_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function applyNav({ admin, host }) {
+  const set = (id, show) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = !show;
+  };
+  set("nav-admin", admin);
+  set("nav-host", host);
+  set("nav-present", host);
+}
+
+// Set the header links for the signed-in player. Cache-first: if we
+// already worked this out in the tab, apply it instantly. Otherwise
+// resolve it - admins get every link; everyone else gets Host/Present
+// only while they're hosting an open quiz - then cache and apply.
+export async function setupNav(db, me) {
+  const cached = readNav();
+  if (cached) return applyNav(cached);
+
+  const admin = !!me.is_admin;
+  let host = admin;
+  if (!admin) {
+    const { data } = await db
+      .from("weeks")
+      .select("id")
+      .eq("host_id", me.id)
+      .neq("status", "closed")
+      .limit(1);
+    host = !!(data && data.length);
+  }
+
+  const nav = { admin, host };
+  try {
+    sessionStorage.setItem(NAV_KEY, JSON.stringify(nav));
+  } catch {
+    /* storage blocked - apply anyway, just without the cache */
+  }
+  applyNav(nav);
+}
+
+// Drop every cached identity and nav state in this tab. Call on
+// sign-out so the next person to use the tab is looked up fresh
+// instead of inheriting the last person's row or links.
 export function clearMe() {
   try {
+    sessionStorage.removeItem(NAV_KEY);
     for (let i = sessionStorage.length - 1; i >= 0; i--) {
       const k = sessionStorage.key(i);
       if (k && k.startsWith("tf.me.")) sessionStorage.removeItem(k);

@@ -6,7 +6,7 @@ import { animateReorder, reducedMotion, delay, streakShock } from "./fx.js";
 import { streakSegments, streakLine, streakBreakLine, STREAK_MIN } from "./streaks.js";
 import { jokerPoints } from "./jokers.js";
 import { REACTIONS, REACTION_EVENT, reactionTopic } from "./reactions.js";
-import { loadMe } from "./auth.js";
+import { loadMe, setupNav } from "./auth.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -45,10 +45,9 @@ const orderState = {};      // per-question working arrangement for "order" ques
     if (error || !me) return locked("Sign in on the leaderboard first, then come back here.");
     myPlayer = me;
 
-    // The nav's host/present links need a separate lookup, but it's not
-    // on the path to the live quiz - let it resolve alongside instead of
-    // holding the screen.
-    initNav(me.id, me.is_admin);
+    // Header links come from a cached role check - instant on repeat
+    // navigations, and never on the path to the live quiz.
+    setupNav(db, me);
     await findAndEnter();
   } catch (err) {
     locked("Could not reach the database. Check config.js.");
@@ -64,33 +63,6 @@ function locked(message) {
 
 function show(id) {
   document.querySelectorAll(".view").forEach((v) => (v.hidden = v.id !== id));
-}
-
-/* ============================================================
-   NAV
-   ============================================================ */
-async function initNav(meId, isAdmin) {
-  const adminLink = $("nav-admin");
-  if (adminLink) adminLink.hidden = !isAdmin;
-
-  const hostLink = $("nav-host");
-  const presentLink = $("nav-present");
-
-  const setHosting = (hosting) => {
-    if (hostLink) hostLink.hidden = !hosting;
-    if (presentLink) presentLink.hidden = !hosting;
-  };
-
-  if (isAdmin) return setHosting(true);
-  if (!meId) return setHosting(false);
-
-  const { data } = await db
-    .from("weeks")
-    .select("id")
-    .eq("host_id", meId)
-    .neq("status", "closed")
-    .limit(1);
-  setHosting(!!(data && data.length));
 }
 
 /* ============================================================

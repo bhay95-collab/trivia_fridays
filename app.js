@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, LOGIN_DOMAIN } from "./config.js";
 import { fireConfetti, countUp } from "./fx.js";
 import { fetchSeason, badgeChips, streakChip, renderSeasonRail } from "./season.js";
 import { rivalryLine, headToHead } from "./needle.js";
-import { loadMe, clearMe } from "./auth.js";
+import { loadMe, clearMe, setupNav } from "./auth.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -205,7 +205,7 @@ async function showBoard(session) {
       return;
     }
     myPlayerId = me.id;
-    initNav(me.id, me.is_admin);
+    setupNav(db, me);
   }
   loadSuggestions();
 
@@ -244,33 +244,6 @@ function renderBoard() {
       ? "Ranked on average points per quiz played. Consistency counts."
       : "Ranked on total points across the season. Show up, score up.";
   }
-}
-
-/* ============================================================
-   NAV
-   ============================================================ */
-async function initNav(meId, isAdmin) {
-  const adminLink = $("nav-admin");
-  if (adminLink) adminLink.hidden = !isAdmin;
-
-  const hostLink = $("nav-host");
-  const presentLink = $("nav-present");
-
-  const setHosting = (hosting) => {
-    if (hostLink) hostLink.hidden = !hosting;
-    if (presentLink) presentLink.hidden = !hosting;
-  };
-
-  if (isAdmin) return setHosting(true);
-  if (!meId) return setHosting(false);
-
-  const { data } = await db
-    .from("weeks")
-    .select("id")
-    .eq("host_id", meId)
-    .neq("status", "closed")
-    .limit(1);
-  setHosting(!!(data && data.length));
 }
 
 /* ============================================================

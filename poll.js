@@ -1,6 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { loadMe } from "./auth.js";
+import { loadMe, setupNav } from "./auth.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -26,9 +26,9 @@ let pollTimer = null;
     if (error || !me) return locked("Sign in on the leaderboard first, then come back here.");
 
     myPlayerId = me.id;
-    // Nav host/present links resolve on their own; don't hold the poll
-    // behind that extra lookup.
-    initNav(me.id, me.is_admin);
+    // Header links come from a cached role check - instant on repeat
+    // navigations, no round trip holding up the poll.
+    setupNav(db, me);
     await loadPoll();
   } catch (err) {
     locked("Could not reach the database. Check config.js.");
@@ -43,33 +43,6 @@ function locked(message) {
 
 function show(id) {
   document.querySelectorAll(".view").forEach((v) => (v.hidden = v.id !== id));
-}
-
-/* ============================================================
-   NAV
-   ============================================================ */
-async function initNav(meId, isAdmin) {
-  const adminLink = $("nav-admin");
-  if (adminLink) adminLink.hidden = !isAdmin;
-
-  const hostLink = $("nav-host");
-  const presentLink = $("nav-present");
-
-  const setHosting = (hosting) => {
-    if (hostLink) hostLink.hidden = !hosting;
-    if (presentLink) presentLink.hidden = !hosting;
-  };
-
-  if (isAdmin) return setHosting(true);
-  if (!meId) return setHosting(false);
-
-  const { data } = await db
-    .from("weeks")
-    .select("id")
-    .eq("host_id", meId)
-    .neq("status", "closed")
-    .limit(1);
-  setHosting(!!(data && data.length));
 }
 
 /* ============================================================

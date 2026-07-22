@@ -4,7 +4,7 @@ import { mediaRendererMarkup } from "./media-utils.js";
 import { sfx } from "./sound.js";
 import { fireConfetti, delay, reducedMotion, countUp, podiumSunburst } from "./fx.js";
 import { REACTION_EVENT, reactionTopic, floatReaction } from "./reactions.js";
-import { loadMe } from "./auth.js";
+import { loadMe, setupNav } from "./auth.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -21,6 +21,7 @@ let reactionChannel = null;
 let meterTicker = null;
 let fallbackTimer = null;
 let clearSunburst = null;   // removes the winner sunburst on the next screen change
+let endRevealNow = null;    // set while the podium animation plays; call to jump to the finished board
 
 /* ============================================================
    BOOT
@@ -35,8 +36,7 @@ let clearSunburst = null;   // removes the winner sunburst on the next screen ch
     if (error || !me) return locked("Sign in on the leaderboard first, then come back here.");
     myPlayer = me;
 
-    const adminLink = $("nav-admin");
-    if (adminLink) adminLink.hidden = !me.is_admin;
+    setupNav(db, me);
 
     await findWeeks();
   } catch (err) {
@@ -100,11 +100,6 @@ async function findWeeks() {
     $("week-switcher").innerHTML = data.map((w) =>
       `<option value="${w.id}">${fmtDate(w.quiz_date)}${w.title ? " — " + esc(w.title) : ""} (${w.status})</option>`).join("");
   }
-
-  const hostLink = $("nav-host");
-  if (hostLink) hostLink.hidden = false;
-  const presentLink = $("nav-present");
-  if (presentLink) presentLink.hidden = false;
 
   show("view-present");
   await loadWeek(data[0].id);
@@ -561,7 +556,12 @@ $("reveal-podium-btn").addEventListener("click", async () => {
 /* The one big moment. Sound and motion run off the same timeline
    so they cannot drift: drums build, third and second land with a
    thud, the drums hold through a long beat, and first arrives with
-   the fanfare, the confetti and the lights all at once. */
+   the fanfare, the confetti and the lights all at once.
+
+   The host can cut it short at any point (the Skip button, or
+   Space/Enter/Esc): the drums stop, every plinth snaps up with its
+   final score, and the rest of the board fills in - the same finished
+   state the full run lands on. */
 async function revealPodium(rows) {
   const top3 = rows.slice(0, 3);
   const order = [1, 0, 2]; // left-to-right: 2nd, 1st, 3rd
@@ -577,34 +577,80 @@ async function revealPodium(rows) {
       </div>`;
   }).join("");
 
-  // reduced motion: the full result, immediately, no theatre
-  if (reducedMotion()) {
-    document.querySelectorAll("#present-podium .plinth").forEach((el) => el.classList.remove("is-hidden"));
+  // The finished state, every plinth up with its final score, the
+  // winner's glow behind first, and the rest of the field below. Used
+  // both when motion is off and when the host skips the animation.
+  const settle = () => {
+    document.querySelectorAll("#present-podium .plinth").forEach((el) => {
+      el.classList.remove("is-hidden");
+      const pts = el.querySelector(".pts");
+      if (pts) pts.textContent = fmtPoints(pts.dataset.pts);
+    });
+    if (!clearSunburst) clearSunburst = podiumSunburst($("present-podium").closest(".stage"));
     renderRest(rows.slice(3));
-    return;
-  }
+  };
+
+  // reduced motion: the full result, immediately, no theatre
+  if (reducedMotion()) { settle(); return; }
+
+  // `skipped` resolves the instant the host asks to end it; `wait`
+  // races each pause against it so every remaining beat collapses at
+  // once and the checks below fall through to the finished board.
+  let aborted = false;
+  const skipped = new Promise((resolve) => {
+    endRevealNow = () => { aborted = true; resolve(); };
+  });
+  const wait = (ms) => Promise.race([delay(ms), skipped]);
+
+  const skipBtn = $("skip-reveal-btn");
+  if (skipBtn) skipBtn.hidden = false;
+
+  const finish = () => {
+    endRevealNow = null;
+    if (skipBtn) skipBtn.hidden = true;
+    document.body.classList.remove("house-dim");
+    document.body.classList.remove("is-strobe");
+  };
 
   document.body.classList.add("house-dim");
   const roll = sfx.drumroll(7);
-  await delay(1500);              // let the drums build
 
-  await land(2);                  // 3rd
-  await delay(1100);
-  await land(1);                  // 2nd
-  await delay(1700);              // the held beat before the winner
+  await wait(1500);              // let the drums build
+  if (aborted) { roll.stop(); settle(); return finish(); }
+
+  await land(2);                 // 3rd
+  await wait(1100);
+  if (aborted) { roll.stop(); settle(); return finish(); }
+
+  await land(1);                 // 2nd
+  await wait(1700);              // the held beat before the winner
   roll.stop();
+  if (aborted) { settle(); return finish(); }
+
   if (clearSunburst) clearSunburst();
   clearSunburst = podiumSunburst($("present-podium").closest(".stage"));
-  await land(0);                  // 1st
+  await land(0);                 // 1st
   sfx.fanfare();
   document.body.classList.add("is-strobe");
   fireConfetti($("confetti"), { count: 220, frames: 430 });
 
-  await delay(1900);
-  document.body.classList.remove("house-dim");
+  await wait(1900);
   renderRest(rows.slice(3));
-  setTimeout(() => document.body.classList.remove("is-strobe"), 6000);
+  finish();
+  if (!aborted) setTimeout(() => document.body.classList.remove("is-strobe"), 6000);
 }
+
+$("skip-reveal-btn").addEventListener("click", () => {
+  if (endRevealNow) endRevealNow();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (!endRevealNow) return;
+  if (e.code === "Space" || e.key === "Enter" || e.key === "Escape") {
+    e.preventDefault();
+    endRevealNow();
+  }
+});
 
 async function land(rank) {
   const el = document.querySelector(`.plinth[data-rank="${rank}"]`);

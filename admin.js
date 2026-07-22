@@ -1,6 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
-import { loadMe } from "./auth.js";
+import { loadMe, setupNav } from "./auth.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -27,12 +27,7 @@ let myPlayerId = null;
     $("tagline").textContent = "People and quizzes";
     $("whoami-name").textContent = me.display_name;
 
-    const hostLink = $("nav-host");
-    if (hostLink) hostLink.hidden = false; // admins can always reach the host page
-    const presentLink = $("nav-present");
-    if (presentLink) presentLink.hidden = false;
-    const adminLink = $("nav-admin");
-    if (adminLink) adminLink.hidden = false;
+    setupNav(db, me); // admins get every link
 
     await loadPeople();
     await loadWeeks();
