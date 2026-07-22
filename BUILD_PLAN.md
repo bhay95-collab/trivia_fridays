@@ -40,6 +40,7 @@ in `resolve_closest()` inside `finalize_week_scores()`.
 | **Status & needle** | `sql/18_status_streaks.sql`, `needle.js`, `season.js`, `app.js` | Reigning-champion crown, attendance-streak flames, and a one-line rivalry nudge for the signed-in player. |
 | **Player profiles** | `app.js`, `needle.js` | Tap any name for a stats card (rank, best week, badges, streak, head-to-head). Built from data already on the page — no round trip. |
 | **Media uploads** | `sql/21_media_storage.sql`, `host.js` | Host builder can upload an image/audio/video file straight from the device (Supabase Storage, `question-media` bucket) instead of only pasting a link. The file's public URL is stored exactly like a pasted URL, so `question_media` and grading are untouched. |
+| **Skip the poll** | `sql/22_skip_poll.sql`, `host.js` | A host who doesn't need a ballot can jump a quiz straight from `draft` (or an abandoned `polling`) to `building` without a vote, via `host_skip_poll()`. Present's readiness check and `start_week()` are unchanged — they never cared how a quiz reached `building`, only that it did. |
 
 ## Data boundaries still in force
 
@@ -51,7 +52,7 @@ fails soft (a missing RPC hides a panel, never breaks the projector).
 ## Setup
 
 Run the SQL files in `sql/` in numerical order (see `SETUP.md`). Each new
-feature is its own migration (`17`–`21`) and is safe to re-run; until a
+feature is its own migration (`17`–`22`) and is safe to re-run; until a
 migration is applied its feature simply stays hidden, and everything else
 keeps working.
 

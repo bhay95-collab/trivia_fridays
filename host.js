@@ -323,15 +323,17 @@ $("ballot-list").addEventListener("click", async (e) => {
 function renderBallotActions() {
   const openBtn = $("open-poll-btn");
   const closeBtn = $("close-poll-btn");
+  const skipBtn = $("skip-poll-btn");
   const hint = $("ballot-hint");
   hint.hidden = true;
 
   if (currentWeek.status === "draft") {
     openBtn.hidden = false;
     closeBtn.hidden = true;
+    skipBtn.hidden = false;
     if (ballot.length < 2) {
       openBtn.disabled = true;
-      hint.textContent = "Add at least two topics to the ballot before you can open the poll.";
+      hint.textContent = "Add at least two topics to the ballot before you can open the poll — or skip the poll and pick your own topic.";
       hint.hidden = false;
     } else {
       openBtn.disabled = false;
@@ -339,6 +341,7 @@ function renderBallotActions() {
   } else if (currentWeek.status === "polling") {
     openBtn.hidden = true;
     closeBtn.hidden = false;
+    skipBtn.hidden = false;
     const totalVotes = (results || []).reduce((sum, r) => sum + Number(r.votes), 0);
     if (totalVotes === 0) {
       hint.textContent = "Nobody has voted yet.";
@@ -347,6 +350,7 @@ function renderBallotActions() {
   } else {
     openBtn.hidden = true;
     closeBtn.hidden = true;
+    skipBtn.hidden = true;
     if (currentWeek.status !== "closed") {
       hint.textContent = "The ballot is closed for this quiz.";
       hint.hidden = false;
@@ -382,6 +386,22 @@ $("close-poll-btn").addEventListener("click", async () => {
   const row = Array.isArray(data) ? data[0] : data;
   await loadWeek(currentWeek.id);
   if (row?.tied) $("winner-tie-note").hidden = false;
+});
+
+$("skip-poll-btn").addEventListener("click", async () => {
+  if (!confirm("Skip the poll and mark this quiz ready to present? No topic will be picked from the ballot.")) return;
+
+  const err = $("host-error");
+  err.hidden = true;
+
+  const { error } = await db.rpc("host_skip_poll", { p_week_id: currentWeek.id });
+  if (error) {
+    err.textContent = error.message;
+    err.hidden = false;
+    return;
+  }
+
+  await loadWeek(currentWeek.id);
 });
 
 /* ============================================================

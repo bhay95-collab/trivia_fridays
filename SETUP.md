@@ -202,6 +202,13 @@ Back on the **Host** page, **Close the poll** once people have voted. The
 winning topic is saved automatically and shown on the host page. A tie is
 broken at random and the page tells you when that happens.
 
+**Skipping the poll**
+Don't need a ballot this week — you already know the topic, or there isn't
+one? **Skip the poll** (next to Open/Close the poll) jumps straight from
+draft to ready-to-present without a vote. No topic gets saved, which is
+fine — it's optional. Works from the draft stage or from a poll you've
+already opened but want to abandon.
+
 **Writing the questions**
 On the **Host** page, scroll down to **Questions**. **Add question**, pick
 multiple choice or free text, write the prompt, and set the points (1 by
