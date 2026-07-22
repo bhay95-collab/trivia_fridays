@@ -1,4 +1,4 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, LOGIN_DOMAIN } from "./config.js";
 import { fireConfetti, countUp } from "./fx.js";
 import { fetchSeason, badgeChips, streakChip, renderSeasonRail } from "./season.js";
@@ -157,7 +157,7 @@ async function showBoard(session) {
   // don't let it block the board from painting.
   const standingsReq = db
     .from("leaderboard")
-    .select("*")
+    .select("player_id, display_name, total_points, weeks_played, best_week, avg_points")
     .order("total_points", { ascending: false })
     .order("display_name");
   const meReq = user

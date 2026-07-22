@@ -1009,6 +1009,15 @@ body.is-onfire::before{
 /* ================= present (the shared screen) ================= */
 body.page-present main{ max-width:1440px; }
 
+/* the room needs to see the whole picture/clip, never a cropped
+   zoom - so on the presenter screen the media area sizes itself to
+   the asset instead of forcing it to fill a fixed box */
+body.page-present .media-card img,
+body.page-present .media-card video{
+  width:auto; max-width:100%; height:auto; max-height:min(70vh, 780px);
+  object-fit:contain; margin-left:auto; margin-right:auto;
+}
+
 .present-prompt{
   font-family:var(--font-display);
   font-size:clamp(1.9rem, 5.2vw, 4.2rem); line-height:1.22;

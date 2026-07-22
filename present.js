@@ -1,4 +1,4 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { mediaRendererMarkup } from "./media-utils.js";
 import { sfx } from "./sound.js";
@@ -225,7 +225,8 @@ async function enterLive() {
     .subscribe();
 
   startReactions();
-  fallbackTimer = setInterval(async () => { await reloadQuiz(); renderLive(); }, 5000);
+  // realtime is the primary signal; this just catches a missed event
+  fallbackTimer = setInterval(async () => { await reloadQuiz(); renderLive(); }, 15000);
   meterTicker = setInterval(updateMeter, 2000);
   updateMeter();
 }
@@ -240,11 +241,17 @@ function openedQuestions() {
   return quiz.filter((q) => q.status !== "pending");
 }
 
+// which question is currently drawn into present-media/present-options,
+// so a poll tick that finds nothing new doesn't tear media down and
+// restart it (image re-decode, video/audio playback reset) for no reason
+let renderedQuestionId = null;
+
 function renderLive() {
   const opened = openedQuestions();
   const next = quiz.find((q) => q.status === "pending");
 
   if (opened.length === 0) {
+    renderedQuestionId = null;
     $("present-progress").textContent = `Question 1 of ${quiz.length}`;
     $("present-prompt").textContent = "Ready for the first question.";
     $("present-options").hidden = true;
@@ -261,31 +268,37 @@ function renderLive() {
 
   $("present-progress").textContent = `Question ${q.q_number} of ${quiz.length}`;
   $("present-prompt").textContent = q.prompt;
-  $("present-media").innerHTML = mediaRendererMarkup(q.media || []);
-  $("present-media").hidden = !(q.media || []).length;
 
-  if (q.q_type === "mc" || q.q_type === "tf") {
-    $("present-options").hidden = false;
-    $("present-options").innerHTML = (q.options || []).map((o) => `
-      <div class="present-option">
-        <span class="present-option-key">${esc(o.key)}</span>
-        <span>${esc(o.text)}</span>
-      </div>`).join("");
-  } else if (q.q_type === "order") {
-    // show the items to arrange, shuffled (stable per question) so the
-    // shared screen never gives the order away
-    $("present-options").hidden = false;
-    $("present-options").innerHTML =
-      `<p class="present-order-note">Put these in the right order:</p>` +
-      stableShuffle((q.options || []), q.id).map((o) => `
-        <div class="present-option"><span>${esc(o.text)}</span></div>`).join("");
-  } else {
-    $("present-options").hidden = true;
+  if (q.id !== renderedQuestionId) {
+    renderedQuestionId = q.id;
+
+    $("present-media").innerHTML = mediaRendererMarkup(q.media || []);
+    $("present-media").hidden = !(q.media || []).length;
+
+    if (q.q_type === "mc" || q.q_type === "tf") {
+      $("present-options").hidden = false;
+      $("present-options").innerHTML = (q.options || []).map((o) => `
+        <div class="present-option">
+          <span class="present-option-key">${esc(o.key)}</span>
+          <span>${esc(o.text)}</span>
+        </div>`).join("");
+    } else if (q.q_type === "order") {
+      // show the items to arrange, shuffled (stable per question) so the
+      // shared screen never gives the order away
+      $("present-options").hidden = false;
+      $("present-options").innerHTML =
+        `<p class="present-order-note">Put these in the right order:</p>` +
+        stableShuffle((q.options || []), q.id).map((o) => `
+          <div class="present-option"><span>${esc(o.text)}</span></div>`).join("");
+    } else {
+      $("present-options").hidden = true;
+    }
+
+    $("answer-meter").hidden = false;
+    $("answer-meter-fill").style.transform = "scaleX(0)";
+    $("answer-meter-label").textContent = "";
+    updateMeter();
   }
-
-  $("answer-meter").hidden = false;
-  $("answer-meter-fill").style.transform = "scaleX(0)";
-  $("answer-meter-label").textContent = "";
 
   $("present-prev").disabled = viewIndex === 0;
   const atLatest = viewIndex === opened.length - 1;
@@ -294,8 +307,6 @@ function renderLive() {
   $("live-hint").textContent = atLatest && !next
     ? "That's every question — go back through with the room, then end the quiz when you're ready."
     : "";
-
-  updateMeter();
 }
 
 $("present-prev").addEventListener("click", () => {

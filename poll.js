@@ -1,4 +1,4 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -10,6 +10,7 @@ let currentWeek = null;
 let isHost = false;
 let myVoteId = null;
 let channel = null;
+let pollTimer = null;
 
 /* ============================================================
    BOOT
@@ -113,8 +114,13 @@ async function loadPoll() {
     .on("broadcast", { event: "vote" }, () => refreshResults())
     .subscribe();
 
-  setInterval(() => refreshResults(), 8000);
+  pollTimer = setInterval(() => refreshResults(), 8000);
 }
+
+window.addEventListener("pagehide", () => {
+  if (pollTimer) clearInterval(pollTimer);
+  if (channel) db.removeChannel(channel);
+});
 
 async function refreshResults() {
   if (!currentWeek) return;
