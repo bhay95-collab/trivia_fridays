@@ -104,6 +104,11 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/17_jokers.sql`, copy the whole file, paste, **Run**
 - This gives every player one joker a week to stake on a single question before they submit: staked and full marks doubles it, staked and anything less scores zero. The doubling only lands when the week's scores are finalised, so the live board never gives the stake away early. Until you run this, the Play page simply won't show the joker — everything else works unchanged. Safe to re-run any time.
 
+**1.15f Add attendance streaks.**
+- **SQL Editor** → **New query**
+- Open `sql/18_status_streaks.sql`, copy the whole file, paste, **Run**
+- This adds one read-only function the leaderboard uses to show a 🔥 flame on anyone who's turned up several quizzes running. It reads existing attendance only — no new data. Until you run it, the flames just don't show. Safe to re-run any time.
+
 **1.16 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 22 people. Benjamin Hay on top with 54.

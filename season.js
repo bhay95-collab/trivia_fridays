@@ -25,10 +25,11 @@ const BADGE_ABBR = {
 
 /* One round trip for everything the rail needs. */
 export async function fetchSeason(db) {
-  const [badges, records, howlers] = await Promise.all([
+  const [badges, records, howlers, streaks] = await Promise.all([
     db.rpc("season_badges"),
     db.rpc("season_records"),
     db.rpc("howler_board"),
+    db.rpc("attendance_streaks").then((r) => r, () => ({ data: [] })),
   ]);
 
   const byPlayer = new Map();
@@ -46,12 +47,26 @@ export async function fetchSeason(db) {
     groups.set(b.badge_code, { ...g, holders: [...g.holders, { name: b.display_name, detail: b.detail }] });
   }
 
+  const streakBy = new Map();
+  for (const s of streaks.data || []) {
+    streakBy.set(s.player_id, { current: Number(s.current_streak) || 0, best: Number(s.best_streak) || 0 });
+  }
+
   return {
     byPlayer,
     groups: [...groups.values()],
     records: records.data || [],
     howlers: howlers.data || [],
+    streaks: streakBy,
   };
+}
+
+/* A small flame chip for anyone on an active run of showing up. Only
+   shows from two weeks in — a "streak" of one isn't a streak. */
+export function streakChip(season, playerId) {
+  const s = season.streaks?.get(playerId);
+  if (!s || s.current < 2) return "";
+  return `<span class="streak-chip" title="Shown up ${s.current} quizzes running">🔥${s.current}</span>`;
 }
 
 /* Chips for a ranking row. */

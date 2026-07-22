@@ -489,12 +489,33 @@ body.house-dim .page-strip{
 }
 .badge-chip.is-shame{ background:var(--spoon); box-shadow:0 2px 0 #8F5E2C; }
 
+/* attendance streak: a flame chip riding on the ranking rows */
+.streak-chip{
+  display:inline-flex; align-items:center; gap:.05em;
+  margin-left:.35rem; padding:0 .35rem; height:1.45rem;
+  border-radius:999px; background:rgba(255,84,112,.14);
+  color:var(--red); font-family:var(--font-mono); font-size:.66rem; font-weight:700;
+  vertical-align:middle; cursor:help; flex:0 0 auto;
+}
+
+/* the reigning champion's crown, sitting just before the winner's name */
+.crown{ margin-right:.25rem; font-size:.95em; filter:drop-shadow(0 0 6px rgba(255,197,49,.6)); }
+
 /* ================= leaderboard page grid ================= */
 .whoami{
   display:flex; align-items:center; justify-content:space-between; gap:.8rem;
   margin:0 0 1.2rem; font-size:.9rem; color:var(--dim);
 }
 .whoami span{ color:var(--cream); font-weight:700; }
+
+/* the needle: a one-line rivalry nudge for the signed-in player */
+.rivalry{
+  margin:-.4rem 0 1.2rem; padding:.6rem .85rem;
+  border-left:0; border-radius:10px;
+  background:linear-gradient(180deg, var(--cab-2), var(--cab));
+  border:1px solid var(--line);
+  color:var(--cream); font-size:.9rem; font-weight:500;
+}
 
 .board-grid{ display:grid; gap:1.5rem; align-items:start; }
 @media (min-width: 980px){

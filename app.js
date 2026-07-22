@@ -1,7 +1,8 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, LOGIN_DOMAIN } from "./config.js";
 import { fireConfetti, countUp } from "./fx.js";
-import { fetchSeason, badgeChips, renderSeasonRail } from "./season.js";
+import { fetchSeason, badgeChips, streakChip, renderSeasonRail } from "./season.js";
+import { rivalryLine } from "./needle.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -27,7 +28,7 @@ async function boot() {
 
 // The shape season.js hands back, used to render the standings
 // immediately before the (heavier) season RPCs have returned.
-const EMPTY_SEASON = { byPlayer: new Map(), groups: [], records: [], howlers: [] };
+const EMPTY_SEASON = { byPlayer: new Map(), groups: [], records: [], howlers: [], streaks: new Map() };
 
 // If the browser restores this page from back/forward cache after
 // signing in elsewhere, re-check instead of showing a stale sign-in
@@ -174,6 +175,7 @@ async function showBoard(session) {
   // badge chips fill in a moment later once the season data arrives.
   renderPodium(ranked.slice(0, 3));
   renderRest(ranked.slice(3), meSlug, EMPTY_SEASON);
+  renderRivalry(ranked, meRow);
 
   if (meRow && ranked[0] && ranked[0].display_name === meRow.display_name) {
     fireConfetti($("confetti"));
@@ -305,10 +307,12 @@ function renderPodium(top) {
   $("podium").innerHTML = order.map((i) => {
     const r = top[i];
     if (!r) return `<div></div>`;
+    // the reigning leader (rank 1, when they've actually played) wears the crown
+    const crown = i === 0 && r.weeks_played > 0 ? `<span class="crown" title="Reigning champion">👑</span>` : "";
     return `
       <div class="plinth p${i + 1}">
         <span class="medal">${["1st", "2nd", "3rd"][i]}</span>
-        <span class="who">${esc(r.display_name)}</span>
+        <span class="who">${crown}${esc(r.display_name)}</span>
         <span class="pts" data-pts="${r.total_points}">${fmt(r.total_points)}</span>
         <span class="sub">${r.weeks_played} quizzes</span>
       </div>`;
@@ -319,11 +323,19 @@ function renderPodium(top) {
     countUp(el, el.dataset.pts, { format: fmt }));
 }
 
+function renderRivalry(ranked, meRow) {
+  const el = $("rivalry");
+  if (!el) return;
+  const line = meRow ? rivalryLine(ranked, meRow.player_id) : "";
+  el.textContent = line;
+  el.hidden = !line;
+}
+
 function renderRest(rows, meSlug, season) {
   $("rankings").innerHTML = rows.map((r) => `
     <li class="${slugify(r.display_name) === meSlug ? "is-me" : ""}">
       <span class="rank">${ordinal(r.rank)}</span>
-      <span class="name">${esc(r.display_name)}${badgeChips(season, r.player_id)}</span>
+      <span class="name">${esc(r.display_name)}${badgeChips(season, r.player_id)}${streakChip(season, r.player_id)}</span>
       <span class="played">${r.weeks_played} quizzes</span>
       <span class="score">${fmt(r.total_points)}</span>
     </li>`).join("");
