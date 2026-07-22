@@ -89,6 +89,11 @@
   <div class="board-grid">
 
     <div class="board-main">
+      <div class="sort-toggle" role="group" aria-label="Sort leaderboard by">
+        <button type="button" class="sort-btn is-active" data-sort="total">Total points</button>
+        <button type="button" class="sort-btn" data-sort="average">Average</button>
+      </div>
+
       <div class="stage">
         <span class="stage-label">Season standings</span>
         <div class="podium" id="podium"></div>
@@ -98,7 +103,7 @@
         <ol class="rankings" id="rankings"></ol>
       </div>
 
-      <p class="rule">Ranked on total points across the season. Show up, score up.</p>
+      <p class="rule" id="board-rule">Ranked on total points across the season. Show up, score up.</p>
     </div>
 
     <aside class="board-rail">

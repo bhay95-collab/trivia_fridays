@@ -18,6 +18,9 @@ let myPlayerId = null;
 let boardRanked = [];
 let boardSeason = null; // set to the loaded season in showBoard; falls back to EMPTY_SEASON
 let boardMeId = null;
+let boardRows = []; // raw leaderboard rows, unsorted, so re-sorting doesn't need a round trip
+let boardMeSlug = null;
+let boardSortBy = "total"; // "total" | "average"
 
 /* ============================================================
    BOOT
@@ -175,17 +178,18 @@ async function showBoard(session) {
   const meRow = rows.find((r) => slugify(r.display_name) === meSlug);
   $("whoami-name").textContent = meRow ? meRow.display_name : "Signed in";
 
-  const ranked = withRanks(rows);
-  boardRanked = ranked;
+  boardRows = rows;
+  boardMeSlug = meSlug;
   boardMeId = meRow ? meRow.player_id : null;
 
   // Paint the standings straight away, before the season RPCs land -
   // badge chips fill in a moment later once the season data arrives.
-  renderPodium(ranked.slice(0, 3));
-  renderRest(ranked.slice(3), meSlug, EMPTY_SEASON);
-  renderRivalry(ranked, meRow);
+  renderBoard();
 
-  if (meRow && ranked[0] && ranked[0].display_name === meRow.display_name) {
+  // Champion status (and the confetti that comes with it) is always
+  // judged on total points, regardless of which view the toggle shows.
+  const totalRanked = sortRows(rows, "total_points");
+  if (meRow && totalRanked[0] && totalRanked[0].display_name === meRow.display_name) {
     fireConfetti($("confetti"));
   }
 
@@ -206,8 +210,37 @@ async function showBoard(session) {
   // rankings re-render with badge chips and the rail fills.
   const season = await seasonReq;
   boardSeason = season;
-  renderRest(ranked.slice(3), meSlug, season);
-  renderSeasonRail(db, season, ranked);
+  renderBoard();
+  renderSeasonRail(db, season, boardRanked);
+}
+
+const SORT_KEYS = { total: "total_points", average: "avg_points" };
+
+document.querySelectorAll(".sort-btn").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    if (btn.dataset.sort === boardSortBy || !boardRows.length) return;
+    boardSortBy = btn.dataset.sort;
+    document.querySelectorAll(".sort-btn").forEach((b) => b.classList.toggle("is-active", b === btn));
+    renderBoard();
+  });
+});
+
+function renderBoard() {
+  const key = SORT_KEYS[boardSortBy];
+  const ranked = sortRows(boardRows, key);
+  boardRanked = ranked;
+  const meRow = ranked.find((r) => slugify(r.display_name) === boardMeSlug);
+
+  renderPodium(ranked.slice(0, 3), key);
+  renderRest(ranked.slice(3), boardMeSlug, boardSeason || EMPTY_SEASON, key);
+  renderRivalry(ranked, meRow, key);
+
+  const rule = $("board-rule");
+  if (rule) {
+    rule.textContent = boardSortBy === "average"
+      ? "Ranked on average points per quiz played. Consistency counts."
+      : "Ranked on total points across the season. Show up, score up.";
+  }
 }
 
 /* ============================================================
@@ -302,16 +335,20 @@ $("suggestion-list").addEventListener("click", async (e) => {
   await loadSuggestions();
 });
 
-// Equal points share a rank. 1,2,2,4 not 1,2,3,4.
-function withRanks(rows) {
+// Sorts by the chosen metric (descending, name as tiebreaker) and ranks
+// the result. Equal values share a rank: 1,2,2,4 not 1,2,3,4.
+function sortRows(rows, key) {
+  const sorted = [...rows].sort((a, b) =>
+    b[key] - a[key] || a.display_name.localeCompare(b.display_name));
   let rank = 0, prev = null;
-  return rows.map((r, i) => {
-    if (r.total_points !== prev) { rank = i + 1; prev = r.total_points; }
+  return sorted.map((r, i) => {
+    if (r[key] !== prev) { rank = i + 1; prev = r[key]; }
     return { ...r, rank };
   });
 }
 
-function renderPodium(top) {
+function renderPodium(top, key = "total_points") {
+  const digits = key === "avg_points" ? 2 : 1;
   const order = [1, 0, 2]; // 2nd, 1st, 3rd
   $("podium").innerHTML = order.map((i) => {
     const r = top[i];
@@ -322,14 +359,14 @@ function renderPodium(top) {
       <div class="plinth p${i + 1}">
         <span class="medal">${["1st", "2nd", "3rd"][i]}</span>
         <span class="who">${crown}<button type="button" class="who-link" data-player-id="${r.player_id}">${esc(r.display_name)}</button></span>
-        <span class="pts" data-pts="${r.total_points}">${fmt(r.total_points)}</span>
+        <span class="pts" data-pts="${r[key]}">${fmt(r[key], digits)}</span>
         <span class="sub">${r.weeks_played} quizzes</span>
       </div>`;
   }).join("");
 
   // roll each podium total up from zero on arrival, like a score reel
   $("podium").querySelectorAll(".pts").forEach((el) =>
-    countUp(el, el.dataset.pts, { format: fmt }));
+    countUp(el, el.dataset.pts, { format: (n) => fmt(n, digits) }));
 }
 
 /* ============================================================
@@ -366,7 +403,7 @@ function openProfile(playerId) {
           <span class="profile-badge-text"><b>${esc(b.name)}</b><span>${esc(b.detail)}</span></span></li>`).join("")}</ul>`
     : `<p class="hint">No badges yet — the season is young.</p>`;
 
-  const h2h = headToHead(meRow, row);
+  const h2h = headToHead(meRow, row, SORT_KEYS[boardSortBy]);
   const streakLine = streak && streak.current >= 2
     ? `<p class="profile-streak">🔥 On a ${streak.current}-quiz attendance streak${streak.best > streak.current ? ` (best: ${streak.best})` : ""}.</p>`
     : "";
@@ -395,28 +432,29 @@ function closeProfile() {
   if (overlay) overlay.hidden = true;
 }
 
-function renderRivalry(ranked, meRow) {
+function renderRivalry(ranked, meRow, key = "total_points") {
   const el = $("rivalry");
   if (!el) return;
-  const line = meRow ? rivalryLine(ranked, meRow.player_id) : "";
+  const line = meRow ? rivalryLine(ranked, meRow.player_id, key) : "";
   el.textContent = line;
   el.hidden = !line;
 }
 
-function renderRest(rows, meSlug, season) {
+function renderRest(rows, meSlug, season, key = "total_points") {
+  const digits = key === "avg_points" ? 2 : 1;
   $("rankings").innerHTML = rows.map((r) => `
     <li class="${slugify(r.display_name) === meSlug ? "is-me" : ""}">
       <span class="rank">${ordinal(r.rank)}</span>
       <span class="name"><button type="button" class="who-link" data-player-id="${r.player_id}">${esc(r.display_name)}</button>${badgeChips(season, r.player_id)}${streakChip(season, r.player_id)}</span>
       <span class="played">${r.weeks_played} quizzes</span>
-      <span class="score">${fmt(r.total_points)}</span>
+      <span class="score">${fmt(r[key], digits)}</span>
     </li>`).join("");
 }
 
 /* ============================================================
    BITS AND PIECES
    ============================================================ */
-const fmt = (n) => Number(n) % 1 === 0 ? Number(n).toString() : Number(n).toFixed(1);
+const fmt = (n, digits = 1) => Number(n) % 1 === 0 ? Number(n).toString() : Number(n).toFixed(digits);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const slugify = (n) => n.normalize("NFKD").replace(/[^A-Za-z ]/g, "")
