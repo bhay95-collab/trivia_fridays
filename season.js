@@ -11,6 +11,12 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+// The roast is held against the person holding the spoon so flipping
+// the Total/Average toggle doesn't reshuffle the line - it only rerolls
+// when the spoon actually changes hands.
+let spoonHolderId = null;
+let spoonRoast = "";
+
 const BADGE_ABBR = {
   perfect: "PQ",
   ever_present: "NM",
@@ -80,23 +86,39 @@ export function badgeChips(season, playerId, max = 3) {
 /* ============================================================
    THE RAIL
    ============================================================ */
-export function renderSeasonRail(db, season, ranked) {
-  renderSpoon(ranked);
+export function renderSeasonRail(db, season) {
   renderHalls(season);
   renderBadgeCase(season);
   renderHowler(db, season.howlers);
 }
 
-function renderSpoon(ranked) {
-  const played = ranked.filter((r) => r.weeks_played > 0);
-  if (played.length < 4) return;
-  const last = played[played.length - 1];
+// The spoon is just last place in the current ranking, so app.js drives
+// it from renderBoard() - that way it tracks the Total/Average toggle
+// instead of being stuck on whoever the standings loaded sorted by.
+export function renderSpoon(ranked, key = "total_points") {
   const el = $("spoon");
+  if (!el) return;
+
+  const played = ranked.filter((r) => r.weeks_played > 0);
+  if (played.length < 4) { el.hidden = true; return; }
+
+  const last = played[played.length - 1];
+
+  if (last.player_id !== spoonHolderId) {
+    spoonHolderId = last.player_id;
+    spoonRoast = randomRoast();
+  }
+
+  const quizzes = `${last.weeks_played} ${last.weeks_played === 1 ? "quiz" : "quizzes"}`;
+  const foot = key === "avg_points"
+    ? `${fmt(last.avg_points, 2)} avg · ${quizzes}`
+    : `${fmt(last.total_points)} points · ${quizzes}`;
+
   el.hidden = false;
   el.innerHTML =
     `<span class="spoon-tab">🥄 Wooden Spoon</span>` +
-    `<p class="spoon-line"><b>${esc(last.display_name)}</b> ${esc(randomRoast())}</p>` +
-    `<span class="spoon-foot">${fmt(last.total_points)} points · ${last.weeks_played} ${last.weeks_played === 1 ? "quiz" : "quizzes"}</span>`;
+    `<p class="spoon-line"><b>${esc(last.display_name)}</b> ${esc(spoonRoast)}</p>` +
+    `<span class="spoon-foot">${foot}</span>`;
 }
 
 function renderHalls(season) {
@@ -189,4 +211,4 @@ function renderHowler(db, howlers) {
   };
 }
 
-const fmt = (n) => Number(n) % 1 === 0 ? Number(n).toString() : Number(n).toFixed(1);
+const fmt = (n, digits = 1) => Number(n) % 1 === 0 ? Number(n).toString() : Number(n).toFixed(digits);

@@ -1,7 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, LOGIN_DOMAIN } from "./config.js";
 import { fireConfetti, countUp } from "./fx.js";
-import { fetchSeason, badgeChips, streakChip, renderSeasonRail } from "./season.js";
+import { fetchSeason, badgeChips, streakChip, renderSeasonRail, renderSpoon } from "./season.js";
 import { rivalryLine, headToHead } from "./needle.js";
 import { loadMe, clearMe, setupNav } from "./auth.js";
 
@@ -214,7 +214,7 @@ async function showBoard(session) {
   const season = await seasonReq;
   boardSeason = season;
   renderBoard();
-  renderSeasonRail(db, season, boardRanked);
+  renderSeasonRail(db, season);
 }
 
 const SORT_KEYS = { total: "total_points", average: "avg_points" };
@@ -237,6 +237,7 @@ function renderBoard() {
   renderPodium(ranked.slice(0, 3), key);
   renderRest(ranked.slice(3), boardMeSlug, boardSeason || EMPTY_SEASON, key);
   renderRivalry(ranked, meRow, key);
+  renderSpoon(ranked, key);
 
   const rule = $("board-rule");
   if (rule) {
