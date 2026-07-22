@@ -503,7 +503,7 @@ function syncCardFromDOM(clientId) {
   } else if (q.q_type === "tf") {
     const checked = card.querySelector(".q-tf:checked");
     if (checked) q.correctIndex = Number(checked.value);
-  } else if (q.q_type === "num") {
+  } else if (q.q_type === "num" || q.q_type === "closest") {
     const val = card.querySelector(".q-num-value");
     const tol = card.querySelector(".q-num-tol");
     if (val) q.num_value = val.value === "" ? null : parseFloat(val.value);
@@ -553,6 +553,7 @@ const TYPE_OPTIONS = [
   ["tf", "True / False"],
   ["text", "Free text"],
   ["num", "Number"],
+  ["closest", "Closest wins"],
   ["order", "Put in order"],
 ];
 
@@ -560,6 +561,7 @@ function typeFieldsHTML(q, canEdit) {
   switch (q.q_type) {
     case "tf": return tfFieldsHTML(q, canEdit);
     case "num": return numFieldsHTML(q, canEdit);
+    case "closest": return closestFieldsHTML(q, canEdit);
     case "order": return orderFieldsHTML(q, canEdit);
     case "text": return textFieldsHTML(q, canEdit);
     default: return mcFieldsHTML(q, canEdit);
@@ -676,6 +678,15 @@ function orderFieldsHTML(q, canEdit) {
     ${canEdit ? `<button type="button" class="btn btn-small" data-action="add-order" ${items.length >= 6 ? "disabled" : ""}>Add item</button>` : ""}`;
 }
 
+function closestFieldsHTML(q, canEdit) {
+  return `
+    <label class="field field-narrow">
+      <span>Actual number</span>
+      <input type="number" step="any" class="q-num-value" value="${q.num_value ?? ""}" placeholder="e.g. 1204" ${canEdit ? "" : "disabled"}>
+    </label>
+    <p class="hint">Whoever lands nearest wins full marks — decided when you end the quiz, so it's a great one to save for last. Ties all win.</p>`;
+}
+
 function testerHTML(placeholder) {
   return `
     <div class="answer-tester">
@@ -771,6 +782,9 @@ function previewAnswerHTML(q) {
   }
   if (q.q_type === "num") {
     return `<input class="preview-answer" disabled placeholder="Player types a number">`;
+  }
+  if (q.q_type === "closest") {
+    return `<input class="preview-answer" disabled placeholder="Player types a number — closest wins">`;
   }
   return `<input class="preview-answer" disabled placeholder="Player types their answer here">`;
 }
@@ -909,7 +923,7 @@ async function saveQuestion(clientId) {
     p_correct_text: q.q_type === "text" ? q.correct_text : null,
     p_alternates: q.q_type === "text" ? (q.alternates || []).map((a) => a.trim()).filter(Boolean) : [],
     p_media: (q.media || []).map((m) => normalizeMediaEntry(m)),
-    p_num_value: q.q_type === "num" ? q.num_value : null,
+    p_num_value: (q.q_type === "num" || q.q_type === "closest") ? q.num_value : null,
     p_num_tolerance: q.q_type === "num" ? q.num_tolerance : null,
     // items are authored in correct order, so the correct sequence is just their keys in order
     p_correct_order: q.q_type === "order" ? keyed.map((o) => o.key) : null,

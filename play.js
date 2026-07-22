@@ -267,9 +267,10 @@ function renderBrowse() {
   } else {
     form.hidden = false;
     const input = $("text-answer-input");
+    const numeric = q.q_type === "num" || q.q_type === "closest";
     input.value = q.my_answer || "";
-    input.inputMode = q.q_type === "num" ? "decimal" : "text";
-    input.placeholder = q.q_type === "num" ? "Type a number" : "";
+    input.inputMode = numeric ? "decimal" : "text";
+    input.placeholder = q.q_type === "closest" ? "Type a number — closest wins" : numeric ? "Type a number" : "";
   }
 
   $("answer-status").textContent = q.my_answer
@@ -503,7 +504,23 @@ function resultRowHTML(q, extra = "") {
     ? (q.options || []).find((o) => o.key === q.correct_key)?.text || q.correct_key
     : q.correct_text;
   const verdict = q.my_answer ? (q.my_verdict || "wrong") : "wrong";
-  const verdictLabel = !q.my_answer ? "Didn't answer" : verdict === "correct" ? "Full marks" : verdict === "partial" ? "Half marks" : "No marks";
+
+  // closest wins is decided across the room at finalise; until then the
+  // player sees a holding row rather than a score
+  if (q.q_type === "closest" && (verdict === "pending" || (q.my_answer && !q.my_verdict))) {
+    return `
+      <li class="results-item is-pending ${q.my_joker ? "is-jokered" : ""} ${extra}">
+        ${q.my_joker ? `<span class="joker-stamp is-lost">Joker · riding on it</span>` : ""}
+        <p class="results-prompt">Q${q.q_number}. ${esc(q.prompt)}</p>
+        <p class="results-mine">Your answer: ${mine ? esc(mine) : "nothing"}</p>
+        <p class="results-correct">The number was ${esc(correct)}</p>
+        <p class="results-verdict">Closest wins · decided on the big screen once everyone's in</p>
+      </li>`;
+  }
+
+  const verdictLabel = !q.my_answer ? "Didn't answer"
+    : q.q_type === "closest" ? (verdict === "correct" ? "Closest — full marks" : "Not the closest")
+    : verdict === "correct" ? "Full marks" : verdict === "partial" ? "Half marks" : "No marks";
 
   const jokerStamp = q.my_joker
     ? `<span class="joker-stamp ${verdict === "correct" ? "is-won" : "is-lost"}">${verdict === "correct" ? "Joker · doubled" : "Joker · lost"}</span>`
@@ -577,7 +594,8 @@ async function runReveal(items) {
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("is-veiled")));
 
     if (it.kind === "answer") {
-      if (it.jokered && it.verdict === "correct") { sfx.sting(); streakShock(); }
+      if (it.verdict === "pending") { /* closest wins — no result to sound yet */ }
+      else if (it.jokered && it.verdict === "correct") { sfx.sting(); streakShock(); }
       else if (it.jokered) sfx.womp();
       else if (it.verdict === "correct") sfx.chime();
       else if (it.verdict === "partial") sfx.tick();

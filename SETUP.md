@@ -114,6 +114,11 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/19_question_types.sql`, copy the whole file, paste, **Run**
 - This lets hosts build True/False, Number (with a ± tolerance), and Put-in-order questions alongside the existing multiple-choice and free-text ones. Grading for all of them happens server-side the moment a player submits, same as before. Until you run this, the host builder only offers the original two types. Safe to re-run any time.
 
+**1.15h Add "Closest wins" questions.**
+- **SQL Editor** → **New query**
+- Open `sql/20_closest_wins.sql`, copy the whole file, paste, **Run**
+- This adds one more type: a number question where whoever lands nearest wins, decided across the room when you finalise the week's scores (ties all win). It's a natural one to save for last on the shared screen. Requires `sql/19_question_types.sql` first. Safe to re-run any time.
+
 **1.16 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 22 people. Benjamin Hay on top with 54.

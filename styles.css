@@ -884,6 +884,8 @@ body.house-dim .page-strip{
 .results-item.is-correct .results-verdict{ color:var(--cyan); background:rgba(37,232,226,.08); }
 .results-item.is-partial .results-verdict{ color:var(--gold); background:rgba(255,197,49,.08); }
 .results-item.is-wrong .results-verdict{ color:var(--red); background:rgba(255,84,112,.08); }
+.results-item.is-pending{ border-style:dashed; }
+.results-item.is-pending .results-verdict{ color:var(--dim); background:rgba(169,140,196,.08); transform:none; }
 
 /* ================= the joker: stake bar + reveal stamp ================= */
 /* magenta throughout — "act here / this is your move" — never gold, which
