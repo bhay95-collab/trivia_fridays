@@ -409,12 +409,31 @@ function closeProfile() {
   if (overlay) overlay.hidden = true;
 }
 
+// Hold the needle line while the board re-renders (sort toggle, season
+// layer streaming in) so the rotating quip doesn't reshuffle under the
+// player — same idea as the held spoon roast. It only rerolls when the
+// matchup actually changes: who's being needled, the gap, or the metric.
+let rivalrySig = null;
+let rivalryText = "";
+
 function renderRivalry(ranked, meRow, key = "total_points") {
   const el = $("rivalry");
   if (!el) return;
-  const line = meRow ? rivalryLine(ranked, meRow.player_id, key) : "";
-  el.textContent = line;
-  el.hidden = !line;
+
+  if (!meRow) { rivalrySig = null; rivalryText = ""; el.textContent = ""; el.hidden = true; return; }
+
+  const i = ranked.findIndex((r) => r.player_id === meRow.player_id);
+  const rival = ranked[i - 1] || ranked[i + 1] || null;
+  const gap = rival ? Number(rival[key]) - Number(meRow[key]) : null;
+  const sig = `${meRow.player_id}|${rival?.player_id || ""}|${gap}|${key}`;
+
+  if (sig !== rivalrySig) {
+    rivalrySig = sig;
+    rivalryText = rivalryLine(ranked, meRow.player_id, key);
+  }
+
+  el.textContent = rivalryText;
+  el.hidden = !rivalryText;
 }
 
 function renderRest(rows, meSlug, season, key = "total_points") {

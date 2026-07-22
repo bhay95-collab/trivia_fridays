@@ -7,6 +7,7 @@ import { streakSegments, streakLine, streakBreakLine, STREAK_MIN } from "./strea
 import { jokerPoints } from "./jokers.js";
 import { REACTIONS, REACTION_EVENT, reactionTopic } from "./reactions.js";
 import { loadMe, setupNav } from "./auth.js";
+import { pickWaitingFirst, pickNoQuizLive, pickNoSubmission } from "./quips.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -31,6 +32,13 @@ let jokerSupported = false; // true once live_state returns the my_joker field, 
                             // Until then the joker bar stays hidden — fail soft.
 const orderState = {};      // per-question working arrangement for "order" questions,
                             // so a poll refresh never reshuffles a half-arranged answer
+
+// Rotating flavour lines are picked once and held, so the 5s poll loop
+// (which re-renders constantly) never flickers between jokes. Each is
+// cleared when its state ends, so the next time round rolls a fresh one.
+let waitingQuip = "";       // "stalling for effect" line while waiting on Q1
+let noQuizQuip = "";        // holding line when nothing is live
+let overQuip = "";          // "you didn't submit" roast at the end
 
 /* ============================================================
    BOOT
@@ -79,10 +87,14 @@ async function findAndEnter() {
   const week = !error && data && data[0];
 
   if (!week) {
-    locked("No quiz is live right now. This page updates the moment the host starts one — no refreshing required, no matter how hard you're tempted.");
+    // Pick the holding line once and hold it — the 4s retry loop would
+    // otherwise reshuffle the joke every few seconds.
+    if (!noQuizQuip) noQuizQuip = pickNoQuizLive();
+    locked(noQuizQuip);
     findTimer = setTimeout(findAndEnter, 4000);
     return;
   }
+  noQuizQuip = ""; // found one — reset so the next dry spell rolls fresh
 
   if (week.host_id === myPlayer.id) {
     return locked("You're hosting this one — head to the Present screen.");
@@ -174,6 +186,8 @@ function render() {
   $("reaction-dock").hidden = weekStatus !== "live";
 
   if (weekStatus === "closed" && !submitted) {
+    if (!overQuip) overQuip = pickNoSubmission();
+    $("over-message").textContent = overQuip;
     $("over-block").hidden = false;
     return;
   }
@@ -186,11 +200,13 @@ function render() {
   }
 
   if (questions.length === 0) {
+    if (!waitingQuip) waitingQuip = pickWaitingFirst();
     $("waiting-block").hidden = false;
-    $("waiting-message").textContent = "Waiting for the host to open the first question… they're stalling for effect.";
+    $("waiting-message").textContent = waitingQuip;
     $("standings-panel").hidden = false;
     return;
   }
+  waitingQuip = ""; // first question is open — roll a fresh wait line next time
 
   $("browse-block").hidden = false;
   $("standings-panel").hidden = false;

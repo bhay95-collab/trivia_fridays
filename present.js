@@ -5,6 +5,7 @@ import { sfx } from "./sound.js";
 import { fireConfetti, delay, reducedMotion, countUp, podiumSunburst } from "./fx.js";
 import { REACTION_EVENT, reactionTopic, floatReaction } from "./reactions.js";
 import { loadMe, setupNav } from "./auth.js";
+import { pickNobodyAnswered } from "./quips.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -486,6 +487,14 @@ function stableShuffle(arr, seedStr) {
   return a;
 }
 
+// Held per question so navigating away and back doesn't reshuffle the
+// "nobody answered" quip — it only rolls once per question per sitting.
+const nobodyAnsweredQuips = new Map();
+function nobodyAnsweredFor(questionId) {
+  if (!nobodyAnsweredQuips.has(questionId)) nobodyAnsweredQuips.set(questionId, pickNobodyAnswered());
+  return nobodyAnsweredQuips.get(questionId);
+}
+
 async function loadOverridePanel(questionId) {
   const q = quiz.find((x) => x.id === questionId);
   const isText = q && q.q_type === "text";
@@ -526,7 +535,7 @@ async function loadOverridePanel(questionId) {
           ${noms.has(r.id) ? "On the ballot" : "Howler"}
         </button>` : ""}
       </div>
-    </li>`).join("") || `<li class="table-empty">Nobody answered this one. A rare moment of total consensus.</li>`;
+    </li>`).join("") || `<li class="table-empty">${esc(nobodyAnsweredFor(questionId))}</li>`;
 }
 
 $("override-list").addEventListener("click", async (e) => {

@@ -186,8 +186,25 @@ generated tones suit the arcade aesthetic better than samples would.
 
 ## Content tone
 
+- **Rotating copy is the rule, not the exception.** Any line a regular
+  player sees week after week is held as a big pool and picked fresh
+  each time (the Wooden Spoon pattern), so no joke goes stale. The pools:
+  the streak-landing banners and break-line eulogies (`streaks.js`), the
+  rivalry needle (`needle.js`), and the "stalling for effect" wait, the
+  "no quiz live" holding screen, the "you didn't submit" roast, and the
+  "nobody answered" review note (`quips.js`). Each has a unit test
+  (`tests/streaks.test.js`, `tests/needle.test.js`, `tests/quips.test.js`)
+  covering size, uniqueness, and the same never-personal word guard the
+  roasts get. **Callers that re-render on a poll or a toggle must pick
+  once and hold the line** (see the held spoon roast in `season.js`, the
+  needle cache in `app.js`, and the `waitingQuip`/`overQuip` vars in
+  `play.js`) — picking on every render makes the copy flicker.
 - **Streak copy** (`streaks.js`) is upbeat and a little cocky when a
   streak lands, dryly affectionate when one breaks. Never insulting.
+  Landing lines are length-aware templates (`STREAK_LINES`, plus the
+  cockier `STREAK_BIG_LINES` from five in a row), so the count on screen
+  is always right; break lines (`STREAK_BREAK_LINES`) always name the
+  question that ended the run, since the reveal anchors the eulogy to a row.
 - **Wooden Spoon roasts** are a large set (`streaks.js: ROASTS`) picked
   at random on every leaderboard load (`randomRoast()`), so the plaque
   tells a different joke each visit. The whole set is checked by a unit

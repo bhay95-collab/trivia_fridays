@@ -1,6 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rivalryLine, headToHead } from "../needle.js";
+import {
+  rivalryLine,
+  headToHead,
+  RIVAL_BEHIND,
+  RIVAL_TIE,
+  RIVAL_TOP_RUNNERUP,
+} from "../needle.js";
+
+// The flavour tail rotates, so assert the fixed factual lead is right
+// and the whole line is a valid lead + one of the pooled tails.
+const oneOf = (line, lead, tails) =>
+  tails.some((t) => line === `${lead} ${t}`);
 
 const ranked = [
   { player_id: "a", display_name: "Ada", total_points: 54, weeks_played: 4 },
@@ -10,19 +21,27 @@ const ranked = [
 ];
 
 test("a chasing player is needled about the person directly above", () => {
-  assert.equal(rivalryLine(ranked, "d"), "7 behind Cy. One good week and it's yours.");
+  const line = rivalryLine(ranked, "d");
+  assert.ok(line.startsWith("7 behind Cy. "), line);
+  assert.ok(oneOf(line, "7 behind Cy.", RIVAL_BEHIND), `unexpected tail: ${line}`);
 });
 
-test("a tie points at the shared rival and the tie-break", () => {
-  assert.equal(rivalryLine(ranked, "c"), "Level with Bo — the tie-break is the next right answer.");
+test("a tie points at the shared rival", () => {
+  const line = rivalryLine(ranked, "c");
+  assert.ok(line.startsWith("Level with Bo. "), line);
+  assert.ok(oneOf(line, "Level with Bo.", RIVAL_TIE), `unexpected tail: ${line}`);
 });
 
 test("the leader is told how far back the runner-up is", () => {
-  assert.equal(rivalryLine(ranked, "a"), "Top of the board — Bo is 9.5 back. Mind the gap.");
+  const line = rivalryLine(ranked, "a");
+  assert.ok(line.startsWith("Top of the board — Bo is 9.5 back. "), line);
+  assert.ok(oneOf(line, "Top of the board — Bo is 9.5 back.", RIVAL_TOP_RUNNERUP), `unexpected tail: ${line}`);
 });
 
 test("decimal gaps are formatted to one place", () => {
-  assert.equal(rivalryLine(ranked, "b"), "9.5 behind Ada. One good week and it's yours.");
+  const line = rivalryLine(ranked, "b");
+  assert.ok(line.startsWith("9.5 behind Ada. "), line);
+  assert.ok(oneOf(line, "9.5 behind Ada.", RIVAL_BEHIND), `unexpected tail: ${line}`);
 });
 
 test("a player who hasn't played gets no line", () => {

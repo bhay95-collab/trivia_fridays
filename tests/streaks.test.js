@@ -51,9 +51,26 @@ test('has something to say at every streak length from three up', () => {
   }
 });
 
+test('streak lines always report the actual run length', () => {
+  // the count is baked in from the length, so it must never go stale or
+  // wrong no matter how long the run gets or which line is picked
+  for (let len = STREAK_MIN; len <= 12; len++) {
+    for (let i = 0; i < 40; i++) {
+      assert.match(streakLine(len), new RegExp(`\\b${len}\\b`), `length ${len} missing from line`);
+    }
+  }
+});
+
 test('mentions the question that broke the streak', () => {
   const line = streakBreakLine(4, 7);
   assert.match(line, /Q7/);
+});
+
+test('every break line names the breaking question, whichever is picked', () => {
+  // the reveal anchors the eulogy to a row, so all of them must carry Q{n}
+  for (let i = 0; i < 200; i++) {
+    assert.match(streakBreakLine(4, 9), /Q9\b/);
+  }
 });
 
 test('offers a big set of roasts so the plaque keeps changing', () => {

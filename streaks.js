@@ -9,6 +9,11 @@
 
 export const STREAK_MIN = 3;
 
+/* One fresh item from a pool. Every rotating bit of copy in here —
+   streak banners, break-line eulogies, the Wooden Spoon roasts —
+   goes through this, so nothing repeats predictably. */
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
 /* ['correct','correct','wrong',...] -> [{ start, length, type }]
    start is the 0-based index of the first answer in the run. */
 export function streakSegments(verdicts) {
@@ -35,23 +40,71 @@ export function bestStreak(verdicts) {
 }
 
 /* The reveal walks the results in order. These two functions hand
-   it something to say when a streak lands and when one dies. */
+   it something to say when a streak lands and when one dies.
+
+   Both draw from big pools and pick fresh each call — like the
+   Wooden Spoon roasts below — so the same banner never fires two
+   weeks running. Lines are length-aware templates so the count is
+   always right no matter how long the run gets. STREAK_LINES carries
+   the ordinary runs; STREAK_BIG_LINES is the cockier set that only
+   comes out once a streak is genuinely showing off (five or more). */
 const STREAK_LINES = [
-  "Three straight. The table has noticed.",
-  "Four in a row. Save some for the rest of us.",
-  "Five on the bounce. Somebody unplug them.",
-  "Six straight. This is showing off now.",
+  (n) => `${n} straight. The table has noticed.`,
+  (n) => `${n} in a row. Save some for the rest of us.`,
+  (n) => `${n} on the bounce. Steady on.`,
+  (n) => `${n} correct on the trot. Someone's warmed up.`,
+  (n) => `${n} in a row — the room just went quiet.`,
+  (n) => `${n} straight. That's not luck any more.`,
+  (n) => `${n} on the spin. Keep it going.`,
+  (n) => `${n} correct back to back. Nicely done.`,
+  (n) => `${n} in a row. The scoreboard is taking notes.`,
+  (n) => `${n} straight and counting. Don't jinx it.`,
+  (n) => `${n} on the bounce. The others have clocked it.`,
+  (n) => `${n} clean in a row. Momentum is a real thing.`,
+  (n) => `${n} straight. Quietly building something here.`,
+  (n) => `${n} correct running. The table's watching now.`,
+];
+
+const STREAK_BIG_LINES = [
+  (n) => `${n} in a row. Somebody unplug them.`,
+  (n) => `${n} straight. This is showing off now.`,
+  (n) => `${n} on the bounce. Save some for next week.`,
+  (n) => `${n} correct in a row — is anyone checking these?`,
+  (n) => `${n} straight. The rest of us are spectators now.`,
+  (n) => `${n} on the trot. Leave some questions for the others.`,
+  (n) => `${n} in a row. This has stopped being fair.`,
+  (n) => `${n} straight. Frame this one.`,
+  (n) => `${n} on the bounce. Absolute machine.`,
+  (n) => `${n} correct running. The quiz has met its match.`,
 ];
 
 export function streakLine(length) {
   if (length < STREAK_MIN) return "";
-  const idx = Math.min(length - STREAK_MIN, STREAK_LINES.length - 1);
-  return STREAK_LINES[idx];
+  const pool = length >= 5 ? STREAK_BIG_LINES : STREAK_LINES;
+  return pick(pool)(length);
 }
+
+/* Dry, affectionate eulogies for a run that just ended. Every line
+   names the question that broke it, so the reveal still points at the
+   right row. */
+const STREAK_BREAK_LINES = [
+  (q) => `The streak dies at Q${q}. It was beautiful while it lasted.`,
+  (q) => `And it ends at Q${q}. Nothing gold can stay.`,
+  (q) => `Q${q} breaks the spell. We'll always have the run.`,
+  (q) => `The run stops at Q${q}. Pour one out.`,
+  (q) => `Q${q} was the wall. Every streak meets one.`,
+  (q) => `Streak over at Q${q}. It had a good innings.`,
+  (q) => `Q${q} calls time on the streak. Gone but not forgotten.`,
+  (q) => `The magic runs out at Q${q}. Still, what a stretch.`,
+  (q) => `Q${q} ends the party. Lovely while it lasted.`,
+  (q) => `The streak bows out at Q${q}. Take the memories.`,
+  (q) => `Q${q} snaps it. All good things, and so on.`,
+  (q) => `That's the streak done at Q${q}. History now.`,
+];
 
 export function streakBreakLine(length, qNumber) {
   if (length < STREAK_MIN) return "";
-  return `The streak dies at Q${qNumber}. It was beautiful while it lasted.`;
+  return pick(STREAK_BREAK_LINES)(qNumber);
 }
 
 /* ============================================================
@@ -125,5 +178,5 @@ export const ROASTS = [
 /* A fresh roast each call, so the plaque never reads the same on
    two visits in a row within a sitting. */
 export function randomRoast() {
-  return ROASTS[Math.floor(Math.random() * ROASTS.length)];
+  return pick(ROASTS);
 }
