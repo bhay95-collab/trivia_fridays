@@ -109,6 +109,11 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/18_status_streaks.sql`, copy the whole file, paste, **Run**
 - This adds one read-only function the leaderboard uses to show a 🔥 flame on anyone who's turned up several quizzes running. It reads existing attendance only — no new data. Until you run it, the flames just don't show. Safe to re-run any time.
 
+**1.15g Add the extra question types.**
+- **SQL Editor** → **New query**
+- Open `sql/19_question_types.sql`, copy the whole file, paste, **Run**
+- This lets hosts build True/False, Number (with a ± tolerance), and Put-in-order questions alongside the existing multiple-choice and free-text ones. Grading for all of them happens server-side the moment a player submits, same as before. Until you run this, the host builder only offers the original two types. Safe to re-run any time.
+
 **1.16 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 22 people. Benjamin Hay on top with 54.

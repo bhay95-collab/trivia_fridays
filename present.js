@@ -264,13 +264,21 @@ function renderLive() {
   $("present-media").innerHTML = mediaRendererMarkup(q.media || []);
   $("present-media").hidden = !(q.media || []).length;
 
-  if (q.q_type === "mc") {
+  if (q.q_type === "mc" || q.q_type === "tf") {
     $("present-options").hidden = false;
     $("present-options").innerHTML = (q.options || []).map((o) => `
       <div class="present-option">
         <span class="present-option-key">${esc(o.key)}</span>
         <span>${esc(o.text)}</span>
       </div>`).join("");
+  } else if (q.q_type === "order") {
+    // show the items to arrange, shuffled (stable per question) so the
+    // shared screen never gives the order away
+    $("present-options").hidden = false;
+    $("present-options").innerHTML =
+      `<p class="present-order-note">Put these in the right order:</p>` +
+      stableShuffle((q.options || []), q.id).map((o) => `
+        <div class="present-option"><span>${esc(o.text)}</span></div>`).join("");
   } else {
     $("present-options").hidden = true;
   }
@@ -428,11 +436,25 @@ $("review-next").addEventListener("click", () => {
 });
 
 function correctAnswerText(q) {
-  if (q.q_type === "mc") {
+  if (q.q_type === "mc" || q.q_type === "tf") {
     const opt = (q.options || []).find((o) => o.key === q.correct_key);
     return opt ? `${q.correct_key}. ${opt.text}` : q.correct_key || "—";
   }
   return q.correct_text || "—";
+}
+
+// deterministic shuffle so the shared screen doesn't reshuffle every
+// poll but also never displays "order" items in their correct sequence
+function stableShuffle(arr, seedStr) {
+  let seed = 0;
+  for (const c of String(seedStr)) seed = (seed * 31 + c.charCodeAt(0)) >>> 0;
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const j = seed % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 async function loadOverridePanel(questionId) {

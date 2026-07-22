@@ -426,9 +426,24 @@ async function loadQuestions() {
 }
 
 function rowToDraft(row) {
-  const isMC = row.q_type === "mc";
-  const options = isMC ? (row.options || []).map((o) => ({ text: o.text })) : [{ text: "" }, { text: "" }];
-  const correctIndex = isMC ? (row.options || []).findIndex((o) => o.key === row.correct_key) : 0;
+  let options = [{ text: "" }, { text: "" }];
+  let correctIndex = 0;
+
+  if (row.q_type === "mc") {
+    options = (row.options || []).map((o) => ({ text: o.text }));
+    const ci = (row.options || []).findIndex((o) => o.key === row.correct_key);
+    correctIndex = ci >= 0 ? ci : 0;
+  } else if (row.q_type === "tf") {
+    correctIndex = (row.correct_key || "T").toUpperCase() === "F" ? 1 : 0;
+  } else if (row.q_type === "order") {
+    // present the items in their correct (authored) order in the builder
+    const byKey = new Map((row.options || []).map((o) => [String(o.key).toUpperCase(), o.text]));
+    const seq = Array.isArray(row.correct_order) ? row.correct_order : [];
+    options = seq.length
+      ? seq.map((k) => ({ text: byKey.get(String(k).toUpperCase()) || "" }))
+      : (row.options || []).map((o) => ({ text: o.text }));
+  }
+
   return {
     clientId: row.id,
     id: row.id,
@@ -437,9 +452,11 @@ function rowToDraft(row) {
     prompt: row.prompt,
     points: Number(row.points),
     options,
-    correctIndex: correctIndex >= 0 ? correctIndex : 0,
+    correctIndex,
     correct_text: row.correct_text || "",
     alternates: row.alternates || [],
+    num_value: row.num_value ?? null,
+    num_tolerance: row.num_tolerance ?? 0,
     media: (row.media || []).map((item) => normalizeMediaEntry(item)),
     saved: true,
   };
@@ -457,6 +474,8 @@ function newDraft() {
     correctIndex: 0,
     correct_text: "",
     alternates: [],
+    num_value: null,
+    num_tolerance: 0,
     media: [],
     saved: false,
   };
@@ -481,6 +500,17 @@ function syncCardFromDOM(clientId) {
       const checkedIndex = rows.findIndex((row) => row.querySelector(".q-option-correct").checked);
       if (checkedIndex >= 0) q.correctIndex = checkedIndex;
     }
+  } else if (q.q_type === "tf") {
+    const checked = card.querySelector(".q-tf:checked");
+    if (checked) q.correctIndex = Number(checked.value);
+  } else if (q.q_type === "num") {
+    const val = card.querySelector(".q-num-value");
+    const tol = card.querySelector(".q-num-tol");
+    if (val) q.num_value = val.value === "" ? null : parseFloat(val.value);
+    if (tol) q.num_tolerance = tol.value === "" ? 0 : parseFloat(tol.value);
+  } else if (q.q_type === "order") {
+    const rows = [...card.querySelectorAll(".order-row")];
+    if (rows.length) q.options = rows.map((row) => ({ text: row.querySelector(".q-order-text").value }));
   } else {
     const correctInput = card.querySelector(".q-correct-text");
     if (correctInput) q.correct_text = correctInput.value;
@@ -518,8 +548,25 @@ function renderQuestions() {
   renderPreview();
 }
 
+const TYPE_OPTIONS = [
+  ["mc", "Multiple choice"],
+  ["tf", "True / False"],
+  ["text", "Free text"],
+  ["num", "Number"],
+  ["order", "Put in order"],
+];
+
+function typeFieldsHTML(q, canEdit) {
+  switch (q.q_type) {
+    case "tf": return tfFieldsHTML(q, canEdit);
+    case "num": return numFieldsHTML(q, canEdit);
+    case "order": return orderFieldsHTML(q, canEdit);
+    case "text": return textFieldsHTML(q, canEdit);
+    default: return mcFieldsHTML(q, canEdit);
+  }
+}
+
 function questionCardHTML(q, index, canEdit, savedIndex, savedTotal) {
-  const isMC = q.q_type === "mc";
   return `
     <div class="question-card ${q.saved ? "" : "is-dirty"}" data-client-id="${q.clientId}">
       <div class="question-card-head">
@@ -542,8 +589,7 @@ function questionCardHTML(q, index, canEdit, savedIndex, savedTotal) {
         <label class="field field-narrow">
           <span>Type</span>
           <select class="q-type" ${canEdit ? "" : "disabled"}>
-            <option value="mc" ${isMC ? "selected" : ""}>Multiple choice</option>
-            <option value="text" ${!isMC ? "selected" : ""}>Free text</option>
+            ${TYPE_OPTIONS.map(([v, label]) => `<option value="${v}" ${q.q_type === v ? "selected" : ""}>${label}</option>`).join("")}
           </select>
         </label>
         <label class="field field-narrow">
@@ -552,7 +598,7 @@ function questionCardHTML(q, index, canEdit, savedIndex, savedTotal) {
         </label>
       </div>
 
-      ${isMC ? mcFieldsHTML(q, canEdit) : textFieldsHTML(q, canEdit)}
+      ${typeFieldsHTML(q, canEdit)}
 
       <div class="media-section">
         <div class="panel-title-row">
@@ -584,6 +630,62 @@ function mcFieldsHTML(q, canEdit) {
     </div>
     ${canEdit ? `<button type="button" class="btn btn-small" data-action="add-option" ${q.options.length >= 6 ? "disabled" : ""}>Add option</button>` : ""}
   `;
+}
+
+function tfFieldsHTML(q, canEdit) {
+  const correct = q.correctIndex === 1 ? 1 : 0;
+  return `
+    <div class="tf-choice">
+      <label class="tf-option"><input type="radio" name="tf-${q.clientId}" class="q-tf" value="0" ${correct === 0 ? "checked" : ""} ${canEdit ? "" : "disabled"}> True</label>
+      <label class="tf-option"><input type="radio" name="tf-${q.clientId}" class="q-tf" value="1" ${correct === 1 ? "checked" : ""} ${canEdit ? "" : "disabled"}> False</label>
+    </div>
+    <p class="hint">Pick which one is correct.</p>`;
+}
+
+function numFieldsHTML(q, canEdit) {
+  return `
+    <div class="question-card-row">
+      <label class="field field-narrow">
+        <span>Correct number</span>
+        <input type="number" step="any" class="q-num-value" value="${q.num_value ?? ""}" placeholder="e.g. 1969" ${canEdit ? "" : "disabled"}>
+      </label>
+      <label class="field field-narrow">
+        <span>Tolerance (±)</span>
+        <input type="number" step="any" min="0" class="q-num-tol" value="${q.num_tolerance ?? 0}" ${canEdit ? "" : "disabled"}>
+      </label>
+    </div>
+    <p class="hint">Exact answer scores full marks; anything within the tolerance scores half. Set tolerance to 0 for exact-only.</p>
+    ${q.id ? testerHTML("A number to try") : `<p class="hint">Save this question to try answers against it.</p>`}`;
+}
+
+function orderFieldsHTML(q, canEdit) {
+  const items = q.options.length ? q.options : [{ text: "" }, { text: "" }];
+  return `
+    <p class="hint">List the items in the <b>correct</b> order — players see them shuffled and drag them back.</p>
+    <div class="order-rows">
+      ${items.map((o, i) => `
+        <div class="order-row" data-order-index="${i}">
+          <span class="order-pos">${i + 1}</span>
+          <input type="text" class="q-order-text" value="${esc(o.text)}" placeholder="Item ${i + 1}" ${canEdit ? "" : "disabled"}>
+          ${canEdit ? `
+            <button type="button" class="btn btn-small" data-action="order-up" ${i === 0 ? "disabled" : ""}>↑</button>
+            <button type="button" class="btn btn-small" data-action="order-down" ${i === items.length - 1 ? "disabled" : ""}>↓</button>
+            <button type="button" class="btn btn-small" data-action="remove-order" ${items.length <= 2 ? "disabled" : ""}>Remove</button>` : ""}
+        </div>`).join("")}
+    </div>
+    ${canEdit ? `<button type="button" class="btn btn-small" data-action="add-order" ${items.length >= 6 ? "disabled" : ""}>Add item</button>` : ""}`;
+}
+
+function testerHTML(placeholder) {
+  return `
+    <div class="answer-tester">
+      <label class="field">
+        <span>Try an answer</span>
+        <input type="text" class="q-test-input" placeholder="${placeholder}">
+      </label>
+      <button type="button" class="btn btn-small" data-action="test-answer">Test</button>
+      <p class="test-result" data-role="test-result"></p>
+    </div>`;
 }
 
 function textFieldsHTML(q, canEdit) {
@@ -652,11 +754,25 @@ function renderPreview() {
     <div class="preview-card">
       <p class="preview-number">Question ${i + 1} · ${fmtPoints(q.points)} ${Number(q.points) === 1 ? "point" : "points"}</p>
       <p class="preview-prompt">${esc(q.prompt)}</p>
-      ${q.q_type === "mc"
-        ? `<div class="preview-options">${q.options.map((o) => `<span class="preview-option">${esc(o.text || "…")}</span>`).join("")}</div>`
-        : `<input class="preview-answer" disabled placeholder="Player types their answer here">`}
+      ${previewAnswerHTML(q)}
       ${(q.media || []).length ? `<div class="preview-media">${(q.media || []).map((m) => `<span class="preview-media-tag">${esc(m.media_type || "media")}</span>`).join("")}</div>` : ""}
     </div>`).join("") || `<p class="hint">Nothing to preview yet.</p>`;
+}
+
+function previewAnswerHTML(q) {
+  if (q.q_type === "mc") {
+    return `<div class="preview-options">${q.options.map((o) => `<span class="preview-option">${esc(o.text || "…")}</span>`).join("")}</div>`;
+  }
+  if (q.q_type === "tf") {
+    return `<div class="preview-options"><span class="preview-option">True</span><span class="preview-option">False</span></div>`;
+  }
+  if (q.q_type === "order") {
+    return `<div class="preview-options">${q.options.map((o, i) => `<span class="preview-option">${i + 1}. ${esc(o.text || "…")}</span>`).join("")}<span class="preview-hint-inline">shown shuffled</span></div>`;
+  }
+  if (q.q_type === "num") {
+    return `<input class="preview-answer" disabled placeholder="Player types a number">`;
+  }
+  return `<input class="preview-answer" disabled placeholder="Player types their answer here">`;
 }
 
 $("preview-toggle").addEventListener("click", () => {
@@ -689,7 +805,7 @@ $("questions-list").addEventListener("change", (e) => {
 
   const q = questions.find((x) => x.clientId === clientId);
   q.q_type = typeSelect.value;
-  if (q.q_type === "mc" && q.options.length < 2) {
+  if ((q.q_type === "mc" || q.q_type === "order") && q.options.length < 2) {
     q.options = [{ text: "" }, { text: "" }];
     q.correctIndex = 0;
   }
@@ -705,7 +821,8 @@ $("questions-list").addEventListener("click", async (e) => {
   const clientId = card?.dataset.clientId;
   const action = btn.dataset.action;
 
-  if (["add-option", "remove-option", "add-alt", "remove-alt", "add-media", "remove-media"].includes(action)) {
+  if (["add-option", "remove-option", "add-alt", "remove-alt", "add-media", "remove-media",
+       "add-order", "remove-order", "order-up", "order-down"].includes(action)) {
     syncCardFromDOM(clientId);
     const q = questions.find((x) => x.clientId === clientId);
 
@@ -717,6 +834,20 @@ $("questions-list").addEventListener("click", async (e) => {
       q.options.splice(i, 1);
       if (q.correctIndex === i) q.correctIndex = 0;
       else if (q.correctIndex > i) q.correctIndex -= 1;
+    }
+    if (action === "add-order" && q.options.length < 6) {
+      q.options.push({ text: "" });
+    }
+    if (action === "remove-order" && q.options.length > 2) {
+      const i = Number(btn.closest(".order-row").dataset.orderIndex);
+      q.options.splice(i, 1);
+    }
+    if (action === "order-up" || action === "order-down") {
+      const i = Number(btn.closest(".order-row").dataset.orderIndex);
+      const j = action === "order-up" ? i - 1 : i + 1;
+      if (j >= 0 && j < q.options.length) {
+        [q.options[i], q.options[j]] = [q.options[j], q.options[i]];
+      }
     }
     if (action === "add-alt") {
       q.alternates = q.alternates || [];
@@ -763,17 +894,25 @@ async function saveQuestion(clientId) {
     return;
   }
 
+  const keyed = q.options.map((o, i) => ({ key: String.fromCharCode(65 + i), text: o.text }));
+
   const { data, error } = await db.rpc("host_save_question", {
     p_question_id: q.id,
     p_week_id: currentWeek.id,
     p_q_type: q.q_type,
     p_prompt: q.prompt,
     p_points: q.points,
-    p_options: q.q_type === "mc" ? q.options.map((o, i) => ({ key: String.fromCharCode(65 + i), text: o.text })) : null,
-    p_correct_key: q.q_type === "mc" ? String.fromCharCode(65 + q.correctIndex) : null,
+    p_options: (q.q_type === "mc" || q.q_type === "order") ? keyed : null,
+    p_correct_key: q.q_type === "mc" ? String.fromCharCode(65 + q.correctIndex)
+                 : q.q_type === "tf" ? (q.correctIndex === 1 ? "F" : "T")
+                 : null,
     p_correct_text: q.q_type === "text" ? q.correct_text : null,
     p_alternates: q.q_type === "text" ? (q.alternates || []).map((a) => a.trim()).filter(Boolean) : [],
     p_media: (q.media || []).map((m) => normalizeMediaEntry(m)),
+    p_num_value: q.q_type === "num" ? q.num_value : null,
+    p_num_tolerance: q.q_type === "num" ? q.num_tolerance : null,
+    // items are authored in correct order, so the correct sequence is just their keys in order
+    p_correct_order: q.q_type === "order" ? keyed.map((o) => o.key) : null,
   });
 
   if (error) {

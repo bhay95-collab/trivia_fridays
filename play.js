@@ -28,6 +28,8 @@ let lastBrowseSig = null; // skip re-rendering the browse view when nothing actu
 let jokerSupported = false; // true once live_state returns the my_joker field, i.e. the
                             // jokers migration (sql/17_jokers.sql) has been applied.
                             // Until then the joker bar stays hidden — fail soft.
+const orderState = {};      // per-question working arrangement for "order" questions,
+                            // so a poll refresh never reshuffles a half-arranged answer
 
 /* ============================================================
    BOOT
@@ -250,18 +252,24 @@ function renderBrowse() {
 
   const mc = $("mc-options");
   const form = $("text-answer-form");
+  const order = $("order-options");
+  mc.hidden = true; form.hidden = true; order.hidden = true;
 
-  if (q.q_type === "mc") {
+  if (q.q_type === "mc" || q.q_type === "tf") {
     mc.hidden = false;
-    form.hidden = true;
     mc.innerHTML = (q.options || []).map((o) => `
       <button type="button" class="poll-card ${o.key === q.my_answer ? "is-mine" : ""}" data-key="${esc(o.key)}">
         <span class="poll-card-topic">${esc(o.text)}</span>
       </button>`).join("");
+  } else if (q.q_type === "order") {
+    order.hidden = false;
+    renderOrder(q);
   } else {
-    mc.hidden = true;
     form.hidden = false;
-    $("text-answer-input").value = q.my_answer || "";
+    const input = $("text-answer-input");
+    input.value = q.my_answer || "";
+    input.inputMode = q.q_type === "num" ? "decimal" : "text";
+    input.placeholder = q.q_type === "num" ? "Type a number" : "";
   }
 
   $("answer-status").textContent = q.my_answer
@@ -359,6 +367,68 @@ $("mc-options").addEventListener("click", (e) => {
   saveAnswer(btn.dataset.key);
 });
 
+/* ============================================================
+   ORDER QUESTIONS — items arrive in a fixed order from the server;
+   we shuffle them once per question for the player to rearrange with
+   up/down controls (keyboard- and touch-friendly), then submit the
+   key sequence. The working arrangement is cached so a background
+   poll never scrambles a half-finished answer.
+   ============================================================ */
+function ensureOrder(q) {
+  if (orderState[q.question_id]) return;
+  const keys = (q.options || []).map((o) => o.key);
+  orderState[q.question_id] = q.my_answer
+    ? q.my_answer.split(",").map((k) => k.trim()).filter((k) => keys.includes(k))
+    : shuffle(keys);
+  // guard against a stale/short saved answer
+  for (const k of keys) if (!orderState[q.question_id].includes(k)) orderState[q.question_id].push(k);
+}
+
+function renderOrder(q) {
+  ensureOrder(q);
+  const byKey = new Map((q.options || []).map((o) => [o.key, o.text]));
+  const seq = orderState[q.question_id];
+  $("order-options").innerHTML =
+    seq.map((k, i) => `
+      <div class="order-play-row" data-key="${esc(k)}">
+        <span class="order-play-pos">${i + 1}</span>
+        <span class="order-play-text">${esc(byKey.get(k) || k)}</span>
+        <span class="order-play-tools">
+          <button type="button" class="btn btn-small" data-dir="up" ${i === 0 ? "disabled" : ""} aria-label="Move up">↑</button>
+          <button type="button" class="btn btn-small" data-dir="down" ${i === seq.length - 1 ? "disabled" : ""} aria-label="Move down">↓</button>
+        </span>
+      </div>`).join("") +
+    `<button type="button" class="btn btn-primary order-lock" data-lock="1">${q.my_answer ? "Update my order" : "Lock in this order"}</button>`;
+}
+
+$("order-options").addEventListener("click", (e) => {
+  const q = questions[currentIndex];
+  if (!q || q.q_type !== "order") return;
+
+  if (e.target.closest("[data-lock]")) {
+    saveAnswer(orderState[q.question_id].join(","));
+    return;
+  }
+  const btn = e.target.closest("button[data-dir]");
+  if (!btn) return;
+  const row = btn.closest(".order-play-row");
+  const seq = orderState[q.question_id];
+  const i = seq.indexOf(row.dataset.key);
+  const j = btn.dataset.dir === "up" ? i - 1 : i + 1;
+  if (j < 0 || j >= seq.length) return;
+  [seq[i], seq[j]] = [seq[j], seq[i]];
+  renderOrder(q);
+});
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 $("text-answer-form").addEventListener("submit", (e) => {
   e.preventDefault();
   const val = $("text-answer-input").value.trim();
@@ -413,11 +483,23 @@ $("submit-final-btn").addEventListener("click", async () => {
    ============================================================ */
 let revealing = false;
 
+// map a stored answer (option key, T/F key, comma-joined order keys, or
+// a raw number/text) to something a human reads on the reveal
+function answerToText(q, raw) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  if (q.q_type === "mc" || q.q_type === "tf") {
+    return (q.options || []).find((o) => o.key === raw)?.text || raw;
+  }
+  if (q.q_type === "order") {
+    const byKey = new Map((q.options || []).map((o) => [o.key, o.text]));
+    return raw.split(",").map((k) => byKey.get(k.trim()) || k.trim()).join(" → ");
+  }
+  return raw;
+}
+
 function resultRowHTML(q, extra = "") {
-  const mine = q.q_type === "mc"
-    ? (q.options || []).find((o) => o.key === q.my_answer)?.text || (q.my_answer ? q.my_answer : null)
-    : q.my_answer;
-  const correct = q.q_type === "mc"
+  const mine = answerToText(q, q.my_answer);
+  const correct = (q.q_type === "mc" || q.q_type === "tf")
     ? (q.options || []).find((o) => o.key === q.correct_key)?.text || q.correct_key
     : q.correct_text;
   const verdict = q.my_answer ? (q.my_verdict || "wrong") : "wrong";
