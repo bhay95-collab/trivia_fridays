@@ -6,32 +6,50 @@
    and arcade buttons that physically press.
    =========================================================== */
 :root{
-  --ink:      #140722;
-  --ink-2:    #1D0B33;
-  --cab:      #2B1147;   /* cabinet face */
-  --cab-2:    #38175C;
-  --cab-edge: #4A2670;
-  --screen:   #0C0516;   /* recessed display */
-  --magenta:  #FF2D95;
+  /* --- surfaces: near-black aubergine cabinet, deepened for contrast --- */
+  --ink:      #0B0518;   /* page base — near-black aubergine */
+  --ink-2:    #17092B;
+  --cab:      #2A1247;   /* cabinet face */
+  --cab-2:    #391A5E;
+  --cab-edge: #532C82;   /* moulded bezel edge */
+  --screen:   #08040F;   /* recessed CRT glass */
+  --screen-2: #0E0620;
+
+  /* --- illumination --- */
+  --magenta:  #FF3D9A;
   --magenta-deep:#B60F66;
-  --cyan:     #25E8E2;
+  --cyan:     #33ECE6;
   --cyan-deep:#0E8B87;
-  --gold:     #FFC531;
+  --gold:     #FFC531;   /* marquee amber */
   --gold-deep:#C28E00;
-  --cream:    #FFF3DE;
-  --dim:      #A98CC4;
-  --red:      #FF5470;
-  --spoon:    #C98F52;
-  --line:     rgba(255,243,222,.16);
+  --amber:    #FFB020;
+  --cream:    #FBF3E4;   /* warm off-white — readable text */
+  --dim:      #C2A6E0;   /* muted lilac, lifted for AA on cabinet purple */
+  --dim-2:    #9E82C4;
+  --red:      #FF6079;
+  --spoon:    #E0A860;   /* tarnished / trophy bronze-gold */
+  --spoon-deep:#9A6B2E;
+  --line:     rgba(251,243,228,.14);
+  --line-2:   rgba(251,243,228,.08);
 
   --font-display:"Bungee", sans-serif;
   --font-body:"Barlow", system-ui, sans-serif;
-  --font-mono:"JetBrains Mono", monospace;
+  --font-mono:"JetBrains Mono", ui-monospace, monospace;
 
   --ease-out: cubic-bezier(.23,1,.32,1);
-  --radius-cab: 14px;
-  --radius-screen: 10px;
-  --radius-btn: 10px;
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+  --radius-cab: 16px;
+  --radius-screen: 11px;
+  --radius-btn: 11px;
+
+  /* one spacing scale, used everywhere so vertical rhythm stays honest */
+  --sp-1:.25rem; --sp-2:.5rem; --sp-3:.75rem; --sp-4:1rem;
+  --sp-5:1.5rem; --sp-6:2rem;  --sp-7:2.75rem; --sp-8:3.75rem;
+
+  /* reusable depth: hard offset "cabinet" shadow + soft ambient */
+  --drop:      0 6px 0 rgba(0,0,0,.42);
+  --drop-soft: 0 6px 0 rgba(0,0,0,.42), 0 14px 28px rgba(0,0,0,.34);
+  --inset:     inset 0 3px 0 rgba(0,0,0,.6), inset 0 0 26px rgba(0,0,0,.5);
 
   /* the whole site is a fixed dark theme, never adaptive - tell the
      browser so native chrome (selects, date pickers, scrollbars)
@@ -50,12 +68,15 @@ body{
   margin:0;
   min-height:100dvh;
   background:
-    radial-gradient(1100px 640px at 50% -18%, #2E1556 0%, transparent 60%),
+    radial-gradient(1200px 720px at 50% -12%, #2A1250 0%, transparent 58%),
+    radial-gradient(900px 900px at 88% 8%, rgba(255,61,154,.06), transparent 60%),
+    radial-gradient(900px 900px at 8% 4%, rgba(51,236,230,.05), transparent 60%),
     var(--ink);
+  background-attachment:fixed;
   color:var(--cream);
   font-family:var(--font-body);
   -webkit-font-smoothing:antialiased;
-  padding:0 1rem 4.5rem;
+  padding:0 1rem 3rem;
   overflow-x:hidden;
 }
 
@@ -108,43 +129,67 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
 /* ================= control deck (header) ================= */
 .deck{
   display:flex; align-items:center; gap:.9rem; flex-wrap:wrap;
-  max-width:1200px; margin:16px auto 0; padding:.55rem .9rem;
+  max-width:1200px; margin:18px auto 0; padding:.5rem .7rem;
   background:linear-gradient(180deg, var(--cab-2), var(--cab));
-  border:1px solid var(--line);
+  border:1px solid var(--cab-edge);
   border-radius:var(--radius-cab);
-  box-shadow:0 5px 0 rgba(0,0,0,.45);
+  box-shadow:var(--drop), inset 0 1px 0 rgba(255,255,255,.05);
   position:relative; z-index:8;
 }
+/* two little cabinet screws in the top corners of the control strip */
+.deck::before, .deck::after{
+  content:""; position:absolute; top:8px; width:6px; height:6px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #6b4b93, #1c0f30 70%);
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.5);
+}
+.deck::before{ left:9px; } .deck::after{ right:9px; }
+
 .deck-brand{
-  font-family:var(--font-display); font-size:1rem; line-height:1;
-  text-decoration:none; white-space:nowrap;
+  font-family:var(--font-display); font-size:1.02rem; line-height:1;
+  text-decoration:none; white-space:nowrap; padding-left:.55rem;
+  display:inline-flex; gap:.12em;
 }
 .deck-brand span:first-child{ color:var(--cream); }
-.deck-brand span:last-child{ color:var(--magenta); text-shadow:0 0 12px rgba(255,45,149,.6); }
+.deck-brand span:last-child{ color:var(--magenta); text-shadow:0 0 12px rgba(255,61,154,.6); }
 
-.deck-nav{ display:flex; gap:.3rem; flex-wrap:wrap; margin-inline:auto; }
+.deck-nav{ display:flex; gap:.25rem; flex-wrap:wrap; margin-inline:auto; }
 .nav-link{
-  color:var(--dim); text-decoration:none; font-size:.78rem; font-weight:700;
-  letter-spacing:.06em; text-transform:uppercase;
-  padding:.45rem .8rem; border-radius:8px; border:1px solid transparent;
-  transition:color .12s ease, border-color .12s ease;
+  color:var(--dim); text-decoration:none; font-size:.74rem; font-weight:700;
+  letter-spacing:.09em; text-transform:uppercase;
+  padding:.5rem .85rem; border-radius:9px; border:1px solid transparent;
+  position:relative;
+  transition:color .14s ease, border-color .14s ease, background .14s ease;
 }
-.nav-link:hover{ color:var(--cream); border-color:var(--line); }
+.nav-link:hover{ color:var(--cream); border-color:var(--line); background:rgba(255,255,255,.03); }
 .nav-link.is-active{
   color:var(--ink); background:var(--cyan);
-  box-shadow:0 3px 0 var(--cyan-deep);
+  box-shadow:0 3px 0 var(--cyan-deep), 0 0 18px rgba(51,236,230,.35);
+}
+/* active tab lights a small indicator LED, like a selected cabinet button */
+.nav-link.is-active::after{
+  content:""; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
+  width:5px; height:5px; border-radius:50%; background:var(--cyan);
+  box-shadow:0 0 8px var(--cyan);
 }
 
+/* sound control, styled as a cabinet SFX read-out with a status LED */
 .sound-toggle{
-  font:700 .72rem var(--font-body); letter-spacing:.08em; text-transform:uppercase;
+  display:inline-flex; align-items:center; gap:.5rem;
+  font:700 .68rem var(--font-mono); letter-spacing:.14em; text-transform:uppercase;
   color:var(--dim); background:var(--screen);
-  border:1px solid var(--line); border-radius:999px;
-  padding:.45rem .9rem; cursor:pointer;
-  box-shadow:inset 0 2px 0 rgba(0,0,0,.6);
-  transition:color .12s ease;
+  border:1px solid var(--line); border-radius:9px;
+  padding:.5rem .8rem; cursor:pointer;
+  box-shadow:var(--inset);
+  transition:color .14s ease, border-color .14s ease;
+}
+.sound-toggle::before{
+  content:""; width:7px; height:7px; border-radius:50%; flex:0 0 auto;
+  background:var(--dim-2); box-shadow:none;
+  transition:background .14s ease, box-shadow .14s ease;
 }
 .sound-toggle.is-on{ color:var(--gold); border-color:rgba(255,197,49,.5); }
-.sound-toggle:hover{ color:var(--cream); }
+.sound-toggle.is-on::before{ background:var(--gold); box-shadow:0 0 8px var(--gold); }
+.sound-toggle:hover{ color:var(--cream); border-color:var(--cab-edge); }
 
 /* ================= page strip ================= */
 .page-strip{
@@ -162,51 +207,91 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
 .tagline{ margin:0; color:var(--dim); font-size:.95rem; }
 
 /* ================= index masthead: the signage ================= */
-.masthead{ text-align:center; padding:2rem 0 1.4rem; }
+.masthead{
+  display:flex; flex-direction:column; align-items:center; text-align:center;
+  padding:1.5rem 0 .5rem;
+}
+
+/* a small marquee header tab that names what the cabinet is running */
+.marquee-tag{
+  display:inline-flex; align-items:center; gap:.55rem;
+  font:700 .66rem var(--font-mono); letter-spacing:.28em; text-transform:uppercase;
+  color:var(--gold); margin:0 0 .95rem;
+  padding:.32rem .8rem; border-radius:999px;
+  border:1px solid rgba(255,197,49,.35); background:rgba(255,197,49,.06);
+}
+.marquee-tag::before{
+  content:""; width:6px; height:6px; border-radius:50%;
+  background:var(--gold); box-shadow:0 0 8px var(--gold);
+}
+
+/* the marquee sign: a moulded bezel with a bulb ring, dark tinted glass,
+   and corner screws — the visual anchor of the whole cabinet */
 .marquee-sign{
   display:inline-block; position:relative;
-  padding:1.6rem 2.6rem 1.3rem;
-  background:var(--ink-2);
-  border:3px solid var(--cab-edge);
-  border-radius:22px;
-  box-shadow:0 10px 0 rgba(0,0,0,.5), inset 0 0 0 6px var(--ink);
+  padding:1.5rem 2.8rem 1.35rem;
+  background:
+    radial-gradient(120% 140% at 50% -10%, rgba(255,61,154,.10), transparent 55%),
+    linear-gradient(180deg, #120826, #0A0417);
+  border:2px solid var(--cab-edge);
+  border-radius:20px;
+  box-shadow:
+    0 10px 0 rgba(0,0,0,.5),
+    inset 0 0 0 7px #0A0417,
+    inset 0 0 0 8px rgba(255,255,255,.04),
+    0 0 46px rgba(255,61,154,.14);
+}
+/* the bulb ring: evenly spaced amber bulbs top and bottom, each with a
+   soft halo. One brief chase runs on load, then they hold steady. */
+.marquee-sign::before{
+  content:""; position:absolute; inset:11px 14px; border-radius:12px;
+  pointer-events:none;
   background-image:
-    radial-gradient(circle 3px at 50% 50%, var(--gold) 0 3px, transparent 4px),
-    radial-gradient(circle 3px at 50% 50%, var(--gold) 0 3px, transparent 4px);
-  background-size:24px 12px, 24px 12px;
+    radial-gradient(circle 2.6px at 11px 50%, var(--gold) 0 2.6px, transparent 3.4px),
+    radial-gradient(circle 2.6px at 11px 50%, var(--gold) 0 2.6px, transparent 3.4px);
+  background-size:22px 10px, 22px 10px;
   background-repeat:repeat-x;
-  background-position:12px 10px, 12px calc(100% - 10px);
-  /* dots chase around the frame; halo breathes between gold and magenta */
-  animation:sign-chase 1.2s linear infinite, sign-buzz 5s ease-in-out infinite;
+  background-position:0 0, 0 100%;
+  filter:drop-shadow(0 0 4px rgba(255,197,49,.7));
+  animation:sign-chase 1.1s linear 2 both;
 }
-@keyframes sign-chase{ to{ background-position:36px 10px, 36px calc(100% - 10px); } }
-@keyframes sign-buzz{
-  0%,100%{ box-shadow:0 10px 0 rgba(0,0,0,.5), inset 0 0 0 6px var(--ink), 0 0 28px rgba(255,197,49,.12); }
-  50%{ box-shadow:0 10px 0 rgba(0,0,0,.5), inset 0 0 0 6px var(--ink), 0 0 60px rgba(255,45,149,.3); }
+@keyframes sign-chase{ to{ background-position:22px 0, 22px 100%; } }
+/* four cabinet screws pinning the sign to the panel */
+.marquee-sign::after{
+  content:""; position:absolute; inset:0; border-radius:20px; pointer-events:none;
+  background:
+    radial-gradient(circle 3px at 12px 12px, #543a7a 0 3px, transparent 4px),
+    radial-gradient(circle 3px at calc(100% - 12px) 12px, #543a7a 0 3px, transparent 4px),
+    radial-gradient(circle 3px at 12px calc(100% - 12px), #543a7a 0 3px, transparent 4px),
+    radial-gradient(circle 3px at calc(100% - 12px) calc(100% - 12px), #543a7a 0 3px, transparent 4px);
 }
+
 .wordmark{
   font-family:var(--font-display);
-  margin:0; line-height:.88;
-  font-size:clamp(2.6rem, 10vw, 5.4rem);
+  margin:0; line-height:.92;
+  font-size:clamp(2.5rem, 9.2vw, 5.2rem);
   display:flex; flex-direction:column; align-items:center;
+  letter-spacing:.005em;
 }
-/* neon tube: bright white core wrapped in coloured halos, top line
-   cyan, bottom line magenta, bottom line buzzes like a tired tube */
+/* neon tube: bright white core wrapped in tight, controlled coloured
+   halos — top line cyan, bottom line magenta. Falloff is deliberately
+   short so the letterforms stay crisp rather than bleeding into a blur. */
+.wordmark span{ display:block; }
 .wordmark span:first-child{
   color:#fff;
   text-shadow:
-    0 0 4px #fff,
-    0 0 11px var(--cyan),
-    0 0 26px var(--cyan),
-    0 0 44px rgba(37,232,226,.6);
+    0 0 3px #fff,
+    0 0 9px var(--cyan),
+    0 0 20px rgba(51,236,230,.75),
+    0 0 40px rgba(51,236,230,.35);
 }
 .wordmark span:last-child{
-  color:#fff;
+  color:#fff; margin-top:.02em;
   text-shadow:
-    0 0 4px #fff,
-    0 0 12px var(--magenta),
-    0 0 28px var(--magenta),
-    0 0 50px rgba(255,45,149,.7);
+    0 0 3px #fff,
+    0 0 10px var(--magenta),
+    0 0 22px rgba(255,61,154,.78),
+    0 0 44px rgba(255,61,154,.4);
 }
 
 /* ================= neon tube flicker ================= */
@@ -230,10 +315,14 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
 }
 .eyebrow{
   max-width:760px; margin:1rem auto 0;
-  font-size:clamp(1.1rem, 2.8vw, 1.5rem); letter-spacing:.1em; text-transform:uppercase;
-  color:var(--cyan);
+  font-size:clamp(.95rem, 2.4vw, 1.3rem); letter-spacing:.16em; text-transform:uppercase;
+  font-weight:700; color:var(--cyan);
+  text-shadow:0 0 16px rgba(51,236,230,.3);
 }
-.masthead .tagline{ margin-top:.6rem; }
+.masthead .tagline{
+  margin:.5rem auto 0; max-width:640px;
+  font-size:.92rem; color:var(--dim);
+}
 
 /* ================= buttons: arcade hardware ================= */
 .btn{
@@ -308,25 +397,22 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
 /* ================= cabinets & screens ================= */
 .panel, .admin-panel, .marquee-card{
   background:linear-gradient(180deg, var(--cab-2), var(--cab));
-  border:1px solid var(--line);
+  border:1px solid var(--cab-edge);
   border-radius:var(--radius-cab);
-  padding:1.5rem 1.4rem;
-  margin-bottom:1.5rem;
-  box-shadow:0 7px 0 rgba(0,0,0,.42);
+  padding:1.4rem 1.35rem;
+  margin-bottom:1.4rem;
+  box-shadow:var(--drop), inset 0 1px 0 rgba(255,255,255,.04);
 }
 
 .panel-title, .card-title{
   display:inline-block;
-  font-family:var(--font-display); font-size:.98rem; line-height:1;
-  color:var(--ink); background:var(--gold);
-  padding:.5rem .85rem .4rem; border-radius:8px;
+  font-family:var(--font-display); font-size:.9rem; line-height:1; letter-spacing:.02em;
+  text-transform:uppercase;
+  color:var(--ink); background:linear-gradient(180deg, #FFD24D, var(--gold));
+  padding:.5rem .85rem .4rem; border-radius:9px;
   box-shadow:0 3px 0 var(--gold-deep);
-  transform:rotate(-1.2deg);
-  margin:0 0 1.2rem;
+  margin:0 0 1.15rem;
 }
-/* every other title tab was screwed on by a different volunteer */
-section:nth-of-type(even) > .panel-title,
-section:nth-of-type(even) > * > .panel-title{ transform:rotate(1deg); }
 
 .card-stage{ display:flex; justify-content:center; padding-top:1rem; }
 .marquee-card{ width:min(430px, 100%); padding:1.8rem 1.5rem; }
@@ -371,7 +457,7 @@ section:nth-of-type(even) > * > .panel-title{ transform:rotate(1deg); }
 }
 
 /* ================= sort toggle ================= */
-.sort-toggle{ display:flex; justify-content:center; gap:.5rem; margin-bottom:1rem; }
+.sort-toggle{ display:flex; justify-content:center; gap:.5rem; margin-bottom:1.7rem; }
 .sort-btn{
   width:auto; background:var(--cab-2); color:var(--dim);
   border:1px solid var(--line); border-radius:999px;
@@ -390,72 +476,107 @@ section:nth-of-type(even) > * > .panel-title{ transform:rotate(1deg); }
 /* ================= the stage (bulb-framed podium) ================= */
 .stage{
   position:relative;
-  padding:2.4rem 1.3rem 1.5rem;
-  background:linear-gradient(180deg, #241040, #1A0A30);
-  border:3px solid var(--cab-edge);
-  border-radius:20px;
-  box-shadow:0 10px 0 rgba(0,0,0,.5);
-  margin-bottom:1.5rem;
-  background-image:
-    radial-gradient(circle 3px at 50% 50%, var(--gold) 0 3px, transparent 4px),
-    radial-gradient(circle 3px at 50% 50%, var(--gold) 0 3px, transparent 4px);
-  background-size:24px 12px, 24px 12px;
-  background-repeat:repeat-x;
-  background-position:12px 8px, 12px calc(100% - 8px);
-  animation:stage-chase 1.2s linear infinite;
+  padding:2.6rem 1.4rem 1.6rem;
+  background:
+    radial-gradient(120% 90% at 50% 0%, rgba(255,197,49,.07), transparent 55%),
+    linear-gradient(180deg, #241040, #170A2A);
+  border:2px solid var(--cab-edge);
+  border-radius:18px;
+  box-shadow:0 10px 0 rgba(0,0,0,.5), inset 0 0 0 6px rgba(0,0,0,.25);
+  margin-bottom:1.4rem;
 }
-@keyframes stage-chase{ to{ background-position:36px 8px, 36px calc(100% - 8px); } }
+/* bulb ring around the podium stage: one brief chase on load, then hold */
+.stage::before{
+  content:""; position:absolute; inset:9px 12px; border-radius:12px; pointer-events:none;
+  background-image:
+    radial-gradient(circle 2.4px at 10px 50%, var(--gold) 0 2.4px, transparent 3.2px),
+    radial-gradient(circle 2.4px at 10px 50%, var(--gold) 0 2.4px, transparent 3.2px);
+  background-size:20px 9px, 20px 9px;
+  background-repeat:repeat-x;
+  background-position:0 0, 0 100%;
+  filter:drop-shadow(0 0 3px rgba(255,197,49,.6));
+  animation:stage-chase 1s linear 2 both;
+}
+@keyframes stage-chase{ to{ background-position:20px 0, 20px 100%; } }
 .stage-label{
-  position:absolute; top:0; left:50%; transform:translate(-50%,-55%) rotate(-1.5deg);
-  font-family:var(--font-display); font-size:.85rem; line-height:1;
-  color:var(--ink); background:var(--gold);
-  padding:.45rem .9rem .35rem; border-radius:8px;
-  box-shadow:0 3px 0 var(--gold-deep);
-  white-space:nowrap;
+  position:absolute; top:0; left:50%; transform:translate(-50%,-50%);
+  font-family:var(--font-display); font-size:.82rem; line-height:1; letter-spacing:.02em;
+  color:var(--ink); background:linear-gradient(180deg, #FFD24D, var(--gold));
+  padding:.5rem 1rem .4rem; border-radius:9px;
+  box-shadow:0 4px 0 var(--gold-deep), 0 0 22px rgba(255,197,49,.3);
+  white-space:nowrap; text-transform:uppercase;
 }
 body.is-strobe .stage{ box-shadow:0 10px 0 rgba(0,0,0,.5), 0 0 60px rgba(255,197,49,.35); }
 
 /* --- podium: 2nd, 1st, 3rd --- */
 .podium{
-  display:grid; grid-template-columns:1fr 1.15fr 1fr;
+  display:grid; grid-template-columns:1fr 1.22fr 1fr;
   gap:.7rem; align-items:end;
-  margin-top:1.2rem;
+  margin-top:1.3rem;
 }
 .plinth{
-  position:relative; text-align:center;
-  border-radius:12px 12px 6px 6px;
+  position:relative; isolation:isolate; text-align:center;
+  border-radius:14px 14px 7px 7px;
   border:1px solid var(--line);
-  padding:1.1rem .5rem 1.7rem;
+  padding:1.15rem .6rem 1.5rem;
   background:linear-gradient(180deg, var(--cab-2), var(--cab));
-  box-shadow:0 6px 0 rgba(0,0,0,.45);
+  box-shadow:var(--drop);
 }
-.plinth::after{ /* hazard-striped base board */
-  content:""; position:absolute; left:7px; right:7px; bottom:7px; height:12px;
-  border-radius:4px; opacity:.65;
-  background:repeating-linear-gradient(45deg, rgba(0,0,0,.45) 0 9px, transparent 9px 18px);
+.plinth::after{ /* recessed base plate */
+  content:""; position:absolute; left:8px; right:8px; bottom:6px; height:10px;
+  border-radius:4px; opacity:.55; z-index:-1;
+  background:repeating-linear-gradient(45deg, rgba(0,0,0,.4) 0 8px, transparent 8px 16px);
 }
 .plinth.p1{
-  padding-top:2.1rem; padding-bottom:2.6rem;
+  padding-top:1.9rem; padding-bottom:2.3rem;
   border-color:rgba(255,197,49,.6);
-  box-shadow:0 6px 0 rgba(0,0,0,.45), 0 0 34px rgba(255,197,49,.25);
+  background:linear-gradient(180deg, #3a2352, #2a1247);
+  box-shadow:var(--drop), 0 0 40px rgba(255,197,49,.22);
 }
+/* champion shimmer: one slow diagonal sheen crossing the winner's card */
+.plinth.p1::before{
+  content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:2;
+  background:linear-gradient(105deg, transparent 38%, rgba(255,243,222,.14) 48%, transparent 58%);
+  background-size:260% 100%;
+  animation:champ-shimmer 5.5s ease-in-out infinite;
+}
+@keyframes champ-shimmer{ 0%,72%{ background-position:180% 0 } 100%{ background-position:-40% 0 } }
 .plinth.p3{ padding-bottom:1.2rem; }
 
-.medal{
-  font-family:var(--font-display); font-size:1.4rem; line-height:1;
-  display:block; margin-bottom:.5rem;
+/* generated initials avatar — deterministic from the player's name, so
+   every player gets one consistently. On-palette: a dark screen tile
+   with a rank-tinted ring. */
+.avatar{
+  display:grid; place-items:center; margin:0 auto .7rem;
+  width:2.9rem; height:2.9rem; border-radius:10px;
+  font:400 .92rem var(--font-display); color:var(--cream);
+  background:var(--screen); border:1px solid var(--line);
+  box-shadow:var(--inset);
 }
-.p1 .medal{ color:var(--gold); text-shadow:0 0 18px rgba(255,197,49,.7); font-size:2rem; }
-.p2 .medal{ color:#D9D9E6; }
-.p3 .medal{ color:#D08B5B; }
+.p1 .avatar{ width:3.4rem; height:3.4rem; font-size:1.1rem;
+  border-color:rgba(255,197,49,.7); color:var(--gold);
+  box-shadow:var(--inset), 0 0 16px rgba(255,197,49,.3); }
+.p2 .avatar{ border-color:rgba(217,217,230,.55); }
+.p3 .avatar{ border-color:rgba(208,139,91,.55); }
 
-.plinth .who{ font-weight:700; font-size:.95rem; display:block; margin-bottom:.35rem; overflow-wrap:anywhere; }
-.plinth .pts{
-  font-family:var(--font-mono); font-variant-numeric:tabular-nums;
-  font-size:1.35rem; color:var(--cyan); text-shadow:0 0 14px rgba(37,232,226,.45);
+.medal{
+  font-family:var(--font-display); font-size:.82rem; line-height:1;
+  display:inline-block; margin-bottom:.55rem; padding:.28rem .6rem .22rem;
+  border-radius:7px; letter-spacing:.02em;
 }
-.plinth .sub{ display:block; font-size:.68rem; color:var(--dim); margin-top:.3rem;
-  letter-spacing:.12em; text-transform:uppercase; }
+.p1 .medal{ color:var(--ink); background:linear-gradient(180deg,#FFD24D,var(--gold));
+  box-shadow:0 3px 0 var(--gold-deep); font-size:.92rem; }
+.p2 .medal{ color:var(--ink); background:linear-gradient(180deg,#E6E6F0,#C4C4D6); box-shadow:0 3px 0 #8E8EA6; }
+.p3 .medal{ color:var(--ink); background:linear-gradient(180deg,#E0A06A,#C77D45); box-shadow:0 3px 0 #8A522A; }
+
+.plinth .who{ font-weight:700; font-size:.98rem; display:block; margin-bottom:.4rem; overflow-wrap:anywhere; }
+.plinth .pts{
+  font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:700;
+  font-size:1.5rem; color:var(--cyan); text-shadow:0 0 14px rgba(51,236,230,.45);
+}
+.p1 .pts{ font-size:1.75rem; }
+.plinth .sub{ display:block; font-size:.64rem; color:var(--dim); margin-top:.35rem;
+  letter-spacing:.14em; text-transform:uppercase; font-family:var(--font-mono); }
 
 /* entrance on the season board */
 .podium .plinth{ animation:rise .7s var(--ease-out) both; }
@@ -482,33 +603,46 @@ body.house-dim .page-strip{
   transition:opacity .8s ease, filter .8s ease;
 }
 
-/* ================= rankings: the LED board ================= */
+/* ================= rankings: the LED high-score board ================= */
 .rankings{
-  list-style:none; margin:0; padding:.45rem;
+  list-style:none; margin:0; padding:.5rem;
 }
 .rankings li{
   display:grid; grid-template-columns:2.8rem 1fr auto auto;
   align-items:center; gap:.8rem;
-  padding:.75rem .8rem;
-  border-bottom:1px dashed rgba(255,243,222,.09);
-  position:relative;
+  padding:.72rem .85rem;
+  border-bottom:1px dashed rgba(251,243,228,.08);
+  position:relative; border-radius:8px;
+  transition:background .15s ease;
 }
 .rankings li:last-child{ border-bottom:0; }
+.rankings li:hover{ background:rgba(255,255,255,.025); }
 .rankings li.is-me{
-  background:linear-gradient(90deg, rgba(255,45,149,.2), transparent);
-  border-radius:6px;
+  background:linear-gradient(90deg, rgba(255,61,154,.18), rgba(255,61,154,.03));
+  box-shadow:inset 0 0 0 1px rgba(255,61,154,.35);
 }
 .rankings li.is-me .rank{ color:var(--magenta); }
 .rankings li.is-climbing{
-  background:linear-gradient(90deg, rgba(37,232,226,.25), transparent);
+  background:linear-gradient(90deg, rgba(51,236,230,.25), transparent);
   z-index:2;
 }
-.rank{ font-family:var(--font-display); color:var(--dim); font-size:.95rem; }
-.name{ font-weight:500; display:flex; align-items:center; gap:.45rem; flex-wrap:wrap; overflow-wrap:anywhere; }
-.played{ font-size:.7rem; color:var(--dim); letter-spacing:.1em; }
+.rank{ font-family:var(--font-display); color:var(--dim); font-size:.9rem; font-variant-numeric:tabular-nums; }
+.name{ font-weight:600; display:flex; align-items:center; gap:.45rem; flex-wrap:wrap; overflow-wrap:anywhere; }
+.played{ font-size:.66rem; color:var(--dim-2); letter-spacing:.1em; font-family:var(--font-mono); text-transform:uppercase; }
 .score{
-  font-family:var(--font-mono); font-variant-numeric:tabular-nums;
-  font-size:1.05rem; color:var(--gold);
+  font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:700;
+  font-size:1.1rem; color:var(--gold);
+}
+
+/* ---- leaderboard-scoped: the full board continues the podium system,
+   with a small initials avatar per row (index only, so the present
+   screen's reveal board keeps its own tighter layout) ---- */
+#view-board .rankings li{ grid-template-columns:2.4rem 2rem 1fr auto auto; }
+.rankings .avatar{
+  width:2rem; height:2rem; margin:0; border-radius:8px; font-size:.66rem;
+}
+@media (max-width:560px){
+  #view-board .rankings li{ grid-template-columns:2rem 1.7rem 1fr auto; }
 }
 
 /* season badges pinned to a row */
@@ -579,20 +713,81 @@ body.house-dim .page-strip{
 .profile-badge-text span{ color:var(--dim); font-size:.78rem; }
 
 /* ================= leaderboard page grid ================= */
-.whoami{
-  display:flex; align-items:center; justify-content:space-between; gap:.8rem;
-  margin:0 0 1.2rem; font-size:.9rem; color:var(--dim);
-}
-.whoami span{ color:var(--cream); font-weight:700; }
 
-/* the needle: a one-line rivalry nudge for the signed-in player */
-.rivalry{
-  margin:-.4rem 0 1.2rem; padding:.6rem .85rem;
-  border-left:0; border-radius:10px;
+/* ---- player HUD: the cabinet's status read-out strip ----
+   Consolidates the signed-in player's identity, live rank, quiz
+   credits and the exit control into one arcade module. app.js fills
+   the values from the real leaderboard row; nothing here is hardcoded. */
+.hud{
+  display:flex; flex-wrap:wrap; align-items:stretch; gap:.45rem;
+  margin:0 0 1rem; padding:.45rem;
   background:linear-gradient(180deg, var(--cab-2), var(--cab));
-  border:1px solid var(--line);
-  color:var(--cream); font-size:.9rem; font-weight:500;
+  border:1px solid var(--cab-edge); border-radius:var(--radius-cab);
+  box-shadow:var(--drop);
 }
+.hud-slot{
+  display:flex; flex-direction:column; gap:.16rem;
+  padding:.5rem .9rem; min-width:0; flex:1 1 auto;
+  background:var(--screen); border-radius:10px;
+  box-shadow:var(--inset);
+}
+.hud-slot.hud-player{ flex:2 1 12rem; }
+.hud-key{
+  font:700 .56rem var(--font-mono); letter-spacing:.2em; text-transform:uppercase;
+  color:var(--dim-2); display:inline-flex; align-items:center; gap:.4rem;
+}
+.hud-key::before{
+  content:""; width:5px; height:5px; border-radius:50%; flex:0 0 auto;
+  background:var(--cyan); box-shadow:0 0 6px var(--cyan);
+}
+.hud-val{
+  font-family:var(--font-display); font-size:.9rem; line-height:1.1; color:var(--cream);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.hud-slot.hud-rank .hud-val{ color:var(--gold); text-shadow:0 0 12px rgba(255,197,49,.4); }
+.hud-slot.hud-credits .hud-val{ color:var(--cyan); }
+.hud-exit{
+  flex:0 0 auto; align-self:stretch;
+  display:inline-flex; align-items:center; gap:.5rem;
+  padding:.5rem 1.1rem; border-radius:10px; cursor:pointer;
+  font:400 .82rem var(--font-display); letter-spacing:.04em;
+  color:var(--cream); background:linear-gradient(180deg, #3a1330, #2a0d24);
+  border:1px solid rgba(255,61,154,.5);
+  box-shadow:0 4px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06);
+  transition:transform .12s var(--ease-out), box-shadow .12s var(--ease-out), color .12s ease, border-color .12s ease;
+}
+.hud-exit::before{
+  content:""; width:8px; height:8px; border-radius:50%;
+  background:var(--magenta); box-shadow:0 0 8px var(--magenta);
+}
+.hud-exit:hover{ color:#fff; border-color:var(--magenta); }
+.hud-exit:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.4); }
+
+/* ---- announcement ticker: a dot-matrix LED board ----
+   Renders the live rivalry/high-score line from needle.js. Readable
+   without motion; the ● bookends and scan LED animate gently only. */
+.rivalry{
+  position:relative; isolation:isolate;
+  margin:0 0 1.1rem; padding:.7rem 1rem .7rem 2.4rem;
+  border-radius:12px; overflow:hidden;
+  background:
+    radial-gradient(circle .9px at 2px 2px, rgba(255,197,49,.10) 0 .9px, transparent 1.3px) 0 0/4px 4px,
+    linear-gradient(180deg, #0C0620, var(--screen));
+  border:1px solid var(--cab-edge);
+  box-shadow:var(--inset), 0 4px 0 rgba(0,0,0,.35);
+  color:var(--gold); font:700 .82rem var(--font-mono);
+  letter-spacing:.08em; text-transform:uppercase;
+  text-shadow:0 0 10px rgba(255,197,49,.45);
+  line-height:1.5;
+}
+/* a steady status LED at the left edge of the board */
+.rivalry::before{
+  content:""; position:absolute; left:.95rem; top:50%; transform:translateY(-50%);
+  width:8px; height:8px; border-radius:50%;
+  background:var(--gold); box-shadow:0 0 10px var(--gold);
+  animation:ticker-pulse 1.8s ease-in-out infinite;
+}
+@keyframes ticker-pulse{ 0%,100%{ opacity:1 } 50%{ opacity:.35 } }
 
 .board-grid{ display:grid; gap:1.5rem; align-items:start; }
 @media (min-width: 980px){
@@ -602,48 +797,62 @@ body.house-dim .page-strip{
 
 .rule{ text-align:center; color:var(--dim); font-size:.8rem; margin:1.6rem 0 0; }
 
-/* --- wooden spoon: a bronze booby-prize plaque, hazard-taped and
-       screwed on, so it stops blending into the rail --- */
+/* --- wooden spoon: an arcade "achievement unlocked" panel in tarnished
+       trophy bronze, sitting squarely inside the core palette --- */
 .spoon{
-  position:relative;
-  margin:1.1rem 0 1.5rem; padding:1.5rem 1.2rem 1.15rem;
+  position:relative; overflow:hidden;
+  margin:0 0 1.4rem; padding:1.15rem 1.2rem 1.1rem;
   border-radius:var(--radius-cab);
-  border:2px solid var(--spoon);
+  border:1px solid rgba(224,168,96,.5);
   background:
-    repeating-linear-gradient(45deg, rgba(201,143,82,.12) 0 12px, transparent 12px 24px),
-    linear-gradient(180deg, #2A1A10, #1B1008);
-  box-shadow:0 6px 0 rgba(0,0,0,.45), 0 0 26px rgba(201,143,82,.3);
-  font-size:.95rem; line-height:1.5; color:#EAC79E;
+    radial-gradient(120% 80% at 100% 0%, rgba(224,168,96,.12), transparent 55%),
+    linear-gradient(180deg, var(--screen-2), var(--screen));
+  box-shadow:var(--drop), 0 0 26px rgba(224,168,96,.16), inset 0 1px 0 rgba(255,255,255,.04);
+  font-size:.95rem; line-height:1.5; color:#F0D9BC;
 }
 .spoon-tab{
-  position:absolute; top:0; left:1rem; transform:translateY(-55%) rotate(-2deg);
-  font-family:var(--font-display); font-weight:400; letter-spacing:.02em;
-  font-size:.9rem; line-height:1; color:var(--ink);
-  background:var(--spoon); padding:.45rem .8rem .38rem; border-radius:8px;
-  box-shadow:0 3px 0 #8F5E2C; white-space:nowrap;
+  display:flex; align-items:center; gap:.55rem;
+  font:700 .58rem var(--font-mono); letter-spacing:.22em; text-transform:uppercase;
+  color:var(--spoon); margin-bottom:.5rem;
 }
-.spoon-line{ margin:.15rem 0 0; }
-.spoon-line b{ color:var(--spoon); font-family:var(--font-display); font-weight:400; letter-spacing:.02em; }
+.spoon-tab::before{
+  content:""; width:7px; height:7px; border-radius:50%; flex:0 0 auto;
+  background:var(--spoon); box-shadow:0 0 8px var(--spoon);
+}
+.spoon-title{
+  display:block; font-family:var(--font-display); font-size:1.1rem; line-height:1;
+  color:var(--spoon); text-shadow:0 0 16px rgba(224,168,96,.3); margin-bottom:.55rem;
+}
+.spoon-line{ margin:0; color:#F0D9BC; }
+.spoon-line b{ color:#FFE6C4; font-weight:700; }
 .spoon-foot{
-  display:block; margin-top:.65rem;
-  font-family:var(--font-mono); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase;
-  color:var(--spoon); opacity:.85;
+  display:block; margin-top:.7rem;
+  font-family:var(--font-mono); font-size:.68rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--spoon); opacity:.9;
 }
 
-/* --- halls of fame & shame --- */
+/* --- halls of fame & shame: a permanent high-score record module --- */
 .hall-list{ list-style:none; margin:0; padding:0; }
 .hall-list li{
   display:grid; grid-template-columns:1fr auto;
-  gap:.2rem .8rem; align-items:baseline;
-  padding:.6rem .2rem;
-  border-bottom:1px dashed rgba(255,243,222,.09);
+  gap:.25rem .8rem; align-items:center;
+  padding:.7rem .2rem;
+  border-bottom:1px dashed rgba(251,243,228,.08);
 }
 .hall-list li:last-child{ border-bottom:0; }
-.hall-record{ font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--dim); grid-column:1 / -1; }
-.hall-holder{ font-weight:700; overflow-wrap:anywhere; }
-.hall-value{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; color:var(--cyan); }
+.hall-record{
+  font-family:var(--font-mono); font-size:.62rem; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--dim-2); grid-column:1 / -1;
+}
+.hall-holder{ font-weight:700; font-size:1rem; overflow-wrap:anywhere; }
+.hall-value{
+  font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:700;
+  color:var(--cyan); font-size:.92rem;
+  background:var(--screen); padding:.25rem .6rem; border-radius:7px;
+  box-shadow:var(--inset); text-shadow:0 0 8px rgba(51,236,230,.4);
+}
 .hall-note{ grid-column:1 / -1; font-size:.85rem; color:var(--dim); font-style:italic; overflow-wrap:anywhere; }
-.panel-shame .panel-title{ background:var(--spoon); box-shadow:0 3px 0 #8F5E2C; color:var(--ink); }
+.panel-shame .panel-title{ background:linear-gradient(180deg,#EBB878,var(--spoon)); box-shadow:0 3px 0 var(--spoon-deep); color:var(--ink); }
 
 /* --- badge case --- */
 .badge-case{ list-style:none; margin:0; padding:0; }
@@ -1128,54 +1337,39 @@ body.page-present{ padding-bottom:9.5rem; }
    starfield, and a glowing horizon line. Sits at z-index:-1 so it
    paints above the flat body base but below every panel.
    =========================================================== */
+/* Tinted CRT glass over the whole viewport: a soft corner vignette, an
+   extremely light pixel grain, and near-invisible scanlines. This is the
+   restrained cabinet backdrop that replaced the old synthwave sun+grid —
+   it sets atmosphere without ever competing with content for attention.
+   The .synth-* child elements are kept in the page markup site-wide; each
+   now carries one quiet layer instead of the loud Outrun scene. */
 .synth-horizon{
   position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
 }
+/* faint dot-grain, like phosphor dust on the glass */
 .synth-stars{
-  position:absolute; inset:0 0 45% 0;
-  background-image:
-    radial-gradient(1px 1px at 15% 30%, #fff, transparent),
-    radial-gradient(1px 1px at 32% 12%, #fff, transparent),
-    radial-gradient(1px 1px at 48% 40%, #fff, transparent),
-    radial-gradient(1px 1px at 62% 18%, #fff, transparent),
-    radial-gradient(1px 1px at 74% 34%, #fff, transparent),
-    radial-gradient(1px 1px at 86% 14%, #fff, transparent),
-    radial-gradient(1px 1px at 8% 52%, #fff, transparent),
-    radial-gradient(1px 1px at 92% 48%, #fff, transparent);
-  opacity:.5;
-  animation:twinkle 4.5s ease-in-out infinite alternate;
+  position:absolute; inset:0;
+  background-image:radial-gradient(rgba(255,255,255,.5) .5px, transparent .5px);
+  background-size:3px 3px;
+  opacity:.05;
 }
-@keyframes twinkle{ from{ opacity:.28 } to{ opacity:.6 } }
+/* corner vignette that pulls focus to the centre of the "screen" */
 .synth-sun{
-  position:absolute; left:50%; bottom:45%; width:min(340px, 56vw); aspect-ratio:1;
-  transform:translate(-50%, 50%);
-  border-radius:50%;
-  background:linear-gradient(180deg, var(--gold), #FF7A3D 45%, var(--magenta));
-  -webkit-mask:repeating-linear-gradient(180deg, #000 0 12px, transparent 12px 17px);
-  mask:repeating-linear-gradient(180deg, #000 0 12px, transparent 12px 17px);
-  filter:drop-shadow(0 0 34px rgba(255,45,149,.28));
-  opacity:.32;
+  position:absolute; inset:0;
+  background:radial-gradient(130% 120% at 50% 42%, transparent 55%, rgba(0,0,0,.55) 100%);
 }
+/* a single quiet horizon glow low on the screen, cabinet-purple lit */
 .synth-glow{
-  position:absolute; left:0; right:0; bottom:45%; height:2px;
-  background:linear-gradient(90deg, transparent, var(--cyan), transparent);
-  box-shadow:0 0 26px 6px rgba(37,232,226,.35);
-  opacity:.6;
+  position:absolute; left:-10%; right:-10%; bottom:-14%; height:46%;
+  background:radial-gradient(60% 100% at 50% 100%, rgba(83,44,130,.42), transparent 72%);
 }
+/* whisper-thin scanlines — 3px pitch, barely there, never over text */
 .synth-grid{
-  position:absolute; left:-30%; right:-30%; bottom:0; height:52%;
-  background-image:
-    linear-gradient(to right, rgba(37,232,226,.5) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,45,149,.42) 1px, transparent 1px);
-  background-size:4% 40px, 4% 40px;
-  transform:perspective(340px) rotateX(74deg);
-  transform-origin:bottom center;
-  opacity:.5;
-  -webkit-mask-image:linear-gradient(to bottom, transparent, #000 45%);
-  mask-image:linear-gradient(to bottom, transparent, #000 45%);
-  animation:grid-run 1.3s linear infinite;
+  position:absolute; inset:0;
+  background:repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.22) 2px 3px);
+  opacity:.35;
+  mix-blend-mode:multiply;
 }
-@keyframes grid-run{ to{ background-position:0 40px, 0 40px; } }
 
 /* ===========================================================
    ATTRACT MODE — the arcade idle blink. Steady, readable text
@@ -1233,6 +1427,11 @@ body.page-present{ padding-bottom:9.5rem; }
 }
 
 /* ================= responsive ================= */
+@media (max-width: 900px){
+  /* rail drops below the board on tablet/mobile; nothing sticks */
+  .board-grid > .board-rail{ position:static; }
+}
+
 @media (max-width: 560px){
   .rankings li{ grid-template-columns:2.2rem 1fr auto; }
   .played{ display:none; }
@@ -1240,8 +1439,33 @@ body.page-present{ padding-bottom:9.5rem; }
   .deck-nav{ order:3; width:100%; margin-inline:0; }
   /* keep the marquee inside the screen: tighter frame + smaller floor
      size so the longest word ("Unscheduled") no longer bleeds off-edge */
-  .marquee-sign{ max-width:100%; padding:1.2rem 1rem 1rem; }
-  .wordmark{ font-size:clamp(1.7rem, 8vw, 3rem); }
+  .marquee-sign{ max-width:100%; padding:1.2rem 1.1rem 1rem; }
+  .marquee-sign::before{ inset:9px 11px; }
+  .wordmark{ font-size:clamp(1.9rem, 9vw, 3rem); }
+
+  /* HUD: player on its own row, rank + credits paired, a full-width
+     exit button that stays an easy touch target */
+  .hud-slot.hud-player{ flex:1 1 100%; }
+  .hud-slot.hud-rank, .hud-slot.hud-credits{ flex:1 1 40%; }
+  .hud-exit{ flex:1 1 100%; justify-content:center; padding:.7rem 1.1rem; }
+
+  /* podium becomes a clean vertical stack, first place first in reading
+     order, each plinth a compact horizontal card */
+  .podium{ display:flex; flex-direction:column; gap:.6rem; margin-top:1.1rem; }
+  .plinth{
+    display:grid; grid-template-columns:auto auto 1fr auto; align-items:center;
+    gap:.75rem; text-align:left;
+    padding:.8rem 1rem !important; border-radius:12px;
+  }
+  .plinth.p1{ order:0; } .plinth.p2{ order:1; } .plinth.p3{ order:2; }
+  .plinth::after{ display:none; }
+  .plinth .medal{ margin:0; }
+  .plinth .avatar{ margin:0; width:2.4rem; height:2.4rem; font-size:.72rem; }
+  .p1 .avatar{ width:2.6rem; height:2.6rem; }
+  .plinth .who{ margin:0; }
+  .plinth .pts{ margin:0; font-size:1.3rem; }
+  .p1 .pts{ font-size:1.45rem; }
+  .plinth .sub{ display:none; }
 }
 
 /* ================= confetti overlay ================= */

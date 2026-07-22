@@ -152,7 +152,8 @@ export const sfx = {
 function paintToggle(btn) {
   const on = soundOn();
   btn.setAttribute("aria-pressed", String(on));
-  btn.textContent = on ? "Sound on" : "Sound off";
+  btn.textContent = on ? "SFX On" : "SFX Off";
+  btn.setAttribute("aria-label", on ? "Sound effects on" : "Sound effects off");
   btn.classList.toggle("is-on", on);
 }
 

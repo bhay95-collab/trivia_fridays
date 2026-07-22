@@ -21,6 +21,7 @@ let boardSeason = null; // set to the loaded season in showBoard; falls back to 
 let boardMeId = null;
 let boardRows = []; // raw leaderboard rows, unsorted, so re-sorting doesn't need a round trip
 let boardMeSlug = null;
+let boardMeName = "Signed in"; // display name for the player HUD
 let boardSortBy = "total"; // "total" | "average"
 
 /* ============================================================
@@ -147,7 +148,9 @@ $("sign-out").addEventListener("click", async () => {
    ============================================================ */
 async function showBoard(session) {
   show("view-board");
-  $("tagline").textContent = "Season standings";
+  // The single "Season standings" title lives on the podium stage; the
+  // masthead tagline just carries flavour so the label isn't duplicated.
+  $("tagline").textContent = "The season so far — live. Climb, or be climbed.";
 
   // Reuse the session boot() already fetched instead of a second
   // getUser() round trip.
@@ -178,7 +181,7 @@ async function showBoard(session) {
   }
 
   const meRow = rows.find((r) => slugify(r.display_name) === meSlug);
-  $("whoami-name").textContent = meRow ? meRow.display_name : "Signed in";
+  boardMeName = meRow ? meRow.display_name : "Signed in";
 
   boardRows = rows;
   boardMeSlug = meSlug;
@@ -217,6 +220,36 @@ async function showBoard(session) {
   renderSeasonRail(db, season);
 }
 
+/* The player HUD read-out: identity, live rank and quiz credits, all
+   from the signed-in player's actual ranked row. Rank tracks the
+   Total/Average toggle because it's driven from renderBoard(). */
+function renderHud(meRow) {
+  const nameEl = $("hud-name");
+  if (nameEl) nameEl.textContent = boardMeName;
+
+  const rankEl = $("hud-rank");
+  const credEl = $("hud-credits");
+  if (meRow && meRow.weeks_played > 0) {
+    if (rankEl) rankEl.textContent = ordinal(meRow.rank);
+    const q = meRow.weeks_played;
+    if (credEl) credEl.textContent = `${q} ${q === 1 ? "quiz" : "quizzes"}`;
+  } else {
+    if (rankEl) rankEl.textContent = "—";
+    if (credEl) credEl.textContent = meRow ? "0 quizzes" : "—";
+  }
+}
+
+// Deterministic initials for a player's avatar tile — first + last
+// initial, so everyone gets a consistent, on-palette portrait.
+function initials(name) {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  const a = parts[0][0] || "";
+  const b = parts.length > 1 ? parts[parts.length - 1][0] : "";
+  return (a + b).toUpperCase();
+}
+const avatar = (name) => `<span class="avatar" aria-hidden="true">${esc(initials(name))}</span>`;
+
 const SORT_KEYS = { total: "total_points", average: "avg_points" };
 
 document.querySelectorAll(".sort-btn").forEach((btn) => {
@@ -234,6 +267,7 @@ function renderBoard() {
   boardRanked = ranked;
   const meRow = ranked.find((r) => slugify(r.display_name) === boardMeSlug);
 
+  renderHud(meRow);
   renderPodium(ranked.slice(0, 3), key);
   renderRest(ranked.slice(3), boardMeSlug, boardSeason || EMPTY_SEASON, key);
   renderRivalry(ranked, meRow, key);
@@ -335,6 +369,7 @@ function renderPodium(top, key = "total_points") {
     return `
       <div class="plinth p${i + 1}">
         <span class="medal">${["1st", "2nd", "3rd"][i]}</span>
+        ${avatar(r.display_name)}
         <span class="who">${crown}<button type="button" class="who-link" data-player-id="${r.player_id}">${esc(r.display_name)}</button></span>
         <span class="pts" data-pts="${r[key]}">${fmt(r[key], digits)}</span>
         <span class="sub">${r.weeks_played} quizzes</span>
@@ -441,6 +476,7 @@ function renderRest(rows, meSlug, season, key = "total_points") {
   $("rankings").innerHTML = rows.map((r) => `
     <li class="${slugify(r.display_name) === meSlug ? "is-me" : ""}">
       <span class="rank">${ordinal(r.rank)}</span>
+      ${avatar(r.display_name)}
       <span class="name"><button type="button" class="who-link" data-player-id="${r.player_id}">${esc(r.display_name)}</button>${badgeChips(season, r.player_id)}${streakChip(season, r.player_id)}</span>
       <span class="played">${r.weeks_played} quizzes</span>
       <span class="score">${fmt(r[key], digits)}</span>

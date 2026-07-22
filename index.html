@@ -36,6 +36,7 @@
 </header>
 
 <header class="masthead">
+  <span class="marquee-tag">Now playing</span>
   <div class="marquee-sign">
     <h1 class="wordmark"><span>Unscheduled</span><span>Downtime</span></h1>
   </div>
@@ -81,12 +82,23 @@
 <!-- ================= LEADERBOARD ================= -->
 <section id="view-board" class="view" hidden>
 
-  <div class="whoami">
-    <span id="whoami-name"></span>
-    <button id="sign-out" class="btn btn-ghost">Sign out</button>
+  <div class="hud" aria-label="Player status">
+    <div class="hud-slot hud-player">
+      <span class="hud-key">Player 1</span>
+      <span class="hud-val" id="hud-name">Signed in</span>
+    </div>
+    <div class="hud-slot hud-rank">
+      <span class="hud-key">Rank</span>
+      <span class="hud-val" id="hud-rank">—</span>
+    </div>
+    <div class="hud-slot hud-credits">
+      <span class="hud-key">Credits</span>
+      <span class="hud-val" id="hud-credits">—</span>
+    </div>
+    <button id="sign-out" class="hud-exit" type="button">Exit</button>
   </div>
 
-  <p class="rivalry" id="rivalry" hidden></p>
+  <p class="rivalry" id="rivalry" role="status" hidden></p>
 
   <div class="board-grid">
 

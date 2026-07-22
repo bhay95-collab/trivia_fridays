@@ -116,7 +116,8 @@ export function renderSpoon(ranked, key = "total_points") {
 
   el.hidden = false;
   el.innerHTML =
-    `<span class="spoon-tab">🥄 Wooden Spoon</span>` +
+    `<span class="spoon-tab">🥄 Achievement unlocked</span>` +
+    `<span class="spoon-title">Wooden Spoon</span>` +
     `<p class="spoon-line"><b>${esc(last.display_name)}</b> ${esc(spoonRoast)}</p>` +
     `<span class="spoon-foot">${foot}</span>`;
 }
