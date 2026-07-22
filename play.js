@@ -5,6 +5,7 @@ import { sfx } from "./sound.js";
 import { animateReorder, reducedMotion, delay, streakShock } from "./fx.js";
 import { streakSegments, streakLine, streakBreakLine, STREAK_MIN } from "./streaks.js";
 import { jokerPoints } from "./jokers.js";
+import { REACTIONS, REACTION_EVENT, reactionTopic } from "./reactions.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -13,6 +14,8 @@ const $ = (id) => document.getElementById(id);
 let myPlayer = null;
 let currentWeek = null;
 let channel = null;
+let reactionChannel = null;
+let lastReactAt = 0;
 let pollTimer = null;
 let findTimer = null;
 
@@ -124,6 +127,9 @@ async function findAndEnter() {
       refreshState)
     .subscribe();
 
+  reactionChannel = db.channel(reactionTopic(week.id)).subscribe();
+  buildReactionDock();
+
   pollTimer = setInterval(refreshState, 5000);
 }
 
@@ -131,9 +137,34 @@ function stopLoop() {
   if (pollTimer) clearInterval(pollTimer);
   if (findTimer) clearTimeout(findTimer);
   if (channel) db.removeChannel(channel);
+  if (reactionChannel) db.removeChannel(reactionChannel);
   pollTimer = null;
   findTimer = null;
   channel = null;
+  reactionChannel = null;
+}
+
+/* ============================================================
+   LIVE REACTIONS — tap an emoji, it floats up the shared screen.
+   Fire-and-forget broadcast, rate-limited so a mashed button can't
+   spam the room. Fails soft: no channel yet just means nothing sends.
+   ============================================================ */
+function buildReactionDock() {
+  const dock = $("reaction-dock");
+  if (dock.childElementCount) return; // built once
+  dock.innerHTML = REACTIONS.map((e) =>
+    `<button type="button" class="reaction-btn" data-emoji="${e}" aria-label="React ${e}">${e}</button>`).join("");
+  dock.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-emoji]");
+    if (btn) sendReaction(btn.dataset.emoji);
+  });
+}
+
+function sendReaction(emoji) {
+  const now = Date.now();
+  if (now - lastReactAt < 400) return; // one every 400ms is plenty
+  lastReactAt = now;
+  reactionChannel?.send({ type: "broadcast", event: REACTION_EVENT, payload: { emoji } });
 }
 
 /* ============================================================
@@ -167,6 +198,7 @@ async function refreshState() {
 function render() {
   ["waiting-block", "browse-block", "results-block", "over-block"].forEach((id) => { $(id).hidden = true; });
   $("standings-panel").hidden = true;
+  $("reaction-dock").hidden = weekStatus !== "live";
 
   if (weekStatus === "closed" && !submitted) {
     $("over-block").hidden = false;

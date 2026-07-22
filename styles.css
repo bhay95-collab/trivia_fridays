@@ -1090,6 +1090,38 @@ body.page-present{ padding-bottom:9.5rem; }
 /* ================= confetti overlay ================= */
 #confetti{ position:fixed; inset:0; pointer-events:none; z-index:12; }
 
+/* ================= live reactions ================= */
+/* Play: a row of tappable emoji that broadcast to the shared screen. */
+.reaction-dock{
+  display:flex; gap:.4rem; justify-content:center; flex-wrap:wrap; margin:0 0 1rem;
+}
+.reaction-btn{
+  width:2.7rem; height:2.7rem; padding:0;
+  display:grid; place-items:center;
+  font-size:1.35rem; line-height:1; cursor:pointer;
+  background:var(--cab-2); border:1px solid var(--line); border-radius:999px;
+  box-shadow:0 3px 0 rgba(0,0,0,.4);
+  transition:transform .1s var(--ease-out), border-color .1s ease;
+}
+.reaction-btn:hover{ border-color:var(--cyan); }
+.reaction-btn:active{ transform:scale(.86) translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.4); }
+
+/* Present: floaters rise up the shared screen and fade. Overlay sits
+   below the confetti but above content; individual floaters are dim
+   enough to read the question through them. */
+.reaction-field{ position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:11; }
+.reaction-floater{
+  position:absolute; bottom:-2.5rem;
+  filter:drop-shadow(0 2px 6px rgba(0,0,0,.5));
+  will-change:transform, opacity;
+  animation:reaction-rise 2.6s var(--ease-out) forwards;
+}
+@keyframes reaction-rise{
+  0%{ transform:translateY(0) translateX(0) rotate(0); opacity:0; }
+  12%{ opacity:.95; }
+  100%{ transform:translateY(-90vh) translateX(var(--drift, 0)) rotate(var(--spin, 0deg)); opacity:0; }
+}
+
 /* ================= reduced motion: OFF means OFF ================= */
 @media (prefers-reduced-motion: reduce){
   *, *::before, *::after{

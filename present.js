@@ -3,6 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { mediaRendererMarkup } from "./media-utils.js";
 import { sfx } from "./sound.js";
 import { fireConfetti, delay, reducedMotion, countUp, podiumSunburst } from "./fx.js";
+import { REACTION_EVENT, reactionTopic, floatReaction } from "./reactions.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -15,6 +16,7 @@ let viewIndex = 0;         // which opened question is showing on the shared scr
 let reviewIndex = 0;       // which question is showing in the post-close review
 let finalStandings = [];
 let channel = null;
+let reactionChannel = null;
 let meterTicker = null;
 let fallbackTimer = null;
 let clearSunburst = null;   // removes the winner sunburst on the next screen change
@@ -183,10 +185,23 @@ function stopAllTimers() {
   if (meterTicker) clearInterval(meterTicker);
   if (fallbackTimer) clearInterval(fallbackTimer);
   if (channel) db.removeChannel(channel);
+  if (reactionChannel) db.removeChannel(reactionChannel);
   if (clearSunburst) { clearSunburst(); clearSunburst = null; }
   meterTicker = null;
   fallbackTimer = null;
   channel = null;
+  reactionChannel = null;
+}
+
+/* Players' emoji reactions land here and float up the shared screen.
+   Subscribed once the room is live and kept through the review and
+   podium so the winner gets cheered too. Ephemeral and fail-soft. */
+function startReactions() {
+  if (reactionChannel || !currentWeek) return;
+  reactionChannel = db.channel(reactionTopic(currentWeek.id))
+    .on("broadcast", { event: REACTION_EVENT },
+      ({ payload }) => floatReaction($("reaction-field"), payload?.emoji))
+    .subscribe();
 }
 
 /* ============================================================
@@ -209,6 +224,7 @@ async function enterLive() {
       async () => { await reloadQuiz(); renderLive(); })
     .subscribe();
 
+  startReactions();
   fallbackTimer = setInterval(async () => { await reloadQuiz(); renderLive(); }, 5000);
   meterTicker = setInterval(updateMeter, 2000);
   updateMeter();
@@ -356,6 +372,7 @@ $("end-quiz-btn").addEventListener("click", async () => {
    ============================================================ */
 async function enterReview() {
   await reloadQuiz();
+  startReactions();
   reviewIndex = 0;
   $("review-panel").hidden = false;
   $("podium-panel").hidden = false;
