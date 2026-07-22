@@ -836,6 +836,10 @@ body.house-dim .page-strip{
 .media-row{ padding:.9rem; border:1px solid var(--line); border-radius:12px; background:rgba(0,0,0,.18); }
 .media-row .field{ margin-bottom:.75rem; }
 .media-row .btn-small{ margin-top:.2rem; }
+.media-upload-row{ display:flex; gap:.6rem; align-items:center; }
+.media-upload-row .q-media-url{ flex:1; }
+.media-upload-btn{ flex:0 0 auto; margin-top:0; cursor:pointer; text-align:center; }
+.media-upload-status{ margin:.4rem 0 0; font-size:.78rem; color:var(--dim); }
 .media-stack{ display:flex; flex-direction:column; gap:.8rem; margin:0 0 1.2rem; }
 .media-card{ padding:1rem; border:1px solid var(--line); border-radius:var(--radius-cab); background:linear-gradient(180deg, var(--cab-2), var(--cab)); }
 .media-card img, .media-card video{ width:100%; max-height:340px; object-fit:cover; border-radius:8px; display:block; margin-top:.7rem; }

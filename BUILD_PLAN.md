@@ -39,6 +39,7 @@ in `resolve_closest()` inside `finalize_week_scores()`.
 | **Live reactions** | `reactions.js`, `play.js`, `present.js` | Players tap emoji that float up the shared screen. Ephemeral broadcast, no DB writes, skipped under reduced motion. |
 | **Status & needle** | `sql/18_status_streaks.sql`, `needle.js`, `season.js`, `app.js` | Reigning-champion crown, attendance-streak flames, and a one-line rivalry nudge for the signed-in player. |
 | **Player profiles** | `app.js`, `needle.js` | Tap any name for a stats card (rank, best week, badges, streak, head-to-head). Built from data already on the page — no round trip. |
+| **Media uploads** | `sql/21_media_storage.sql`, `host.js` | Host builder can upload an image/audio/video file straight from the device (Supabase Storage, `question-media` bucket) instead of only pasting a link. The file's public URL is stored exactly like a pasted URL, so `question_media` and grading are untouched. |
 
 ## Data boundaries still in force
 
@@ -50,13 +51,12 @@ fails soft (a missing RPC hides a panel, never breaks the projector).
 ## Setup
 
 Run the SQL files in `sql/` in numerical order (see `SETUP.md`). Each new
-feature is its own migration (`17`–`20`) and is safe to re-run; until a
+feature is its own migration (`17`–`21`) and is safe to re-run; until a
 migration is applied its feature simply stays hidden, and everything else
 keeps working.
 
 ## Not built (deliberately deferred)
 
-- Supabase Storage uploads for media (URLs only, HTTPS-only).
 - Recurring seasons / a champions archive (the leaderboard is one running
   season).
 - AI-assisted question drafting for hosts.

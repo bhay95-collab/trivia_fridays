@@ -119,6 +119,11 @@ Follow Parts 1–3 in order to get the site live. Roughly 30 minutes.
 - Open `sql/20_closest_wins.sql`, copy the whole file, paste, **Run**
 - This adds one more type: a number question where whoever lands nearest wins, decided across the room when you finalise the week's scores (ties all win). It's a natural one to save for last on the shared screen. Requires `sql/19_question_types.sql` first. Safe to re-run any time.
 
+**1.15i Add media uploads.**
+- **SQL Editor** → **New query**
+- Open `sql/21_media_storage.sql`, copy the whole file, paste, **Run**
+- This creates a `question-media` Storage bucket so a host can upload a picture, clip, or track straight from their device when building a question, instead of only being able to paste a link. Until you run this, the "Upload" button in the question builder will fail — pasting an HTTPS link still works either way. Safe to re-run any time.
+
 **1.16 Check it worked.**
 - **SQL Editor** → New query → paste `select * from leaderboard order by total_points desc;` → Run
 - You should see 22 people. Benjamin Hay on top with 54.

@@ -745,8 +745,16 @@ function mediaRowHTML(media, index, canEdit) {
         </label>
       </div>
       <label class="field">
-        <span>HTTPS URL</span>
-        <input type="url" class="q-media-url" value="${esc(media.url || "")}" placeholder="https://..." ${canEdit ? "" : "disabled"}>
+        <span>File or HTTPS URL</span>
+        <div class="media-upload-row">
+          <input type="url" class="q-media-url" value="${esc(media.url || "")}" placeholder="https://... or upload a file" ${canEdit ? "" : "disabled"}>
+          ${canEdit ? `
+            <label class="btn btn-small media-upload-btn">
+              Upload
+              <input type="file" class="q-media-file" accept="image/*,audio/*,video/*" hidden>
+            </label>` : ""}
+        </div>
+        <p class="media-upload-status" data-role="media-upload-status" hidden></p>
       </label>
       <label class="field">
         <span>Caption</span>
@@ -754,6 +762,50 @@ function mediaRowHTML(media, index, canEdit) {
       </label>
       ${canEdit ? `<button type="button" class="btn btn-small" data-action="remove-media">Remove</button>` : ""}
     </div>`;
+}
+
+const MAX_MEDIA_BYTES = 25 * 1024 * 1024; // generous for a phone photo or a short clip
+
+async function handleMediaUpload(fileInput) {
+  const file = fileInput.files[0];
+  fileInput.value = ""; // let the same file be picked again later
+  if (!file) return;
+
+  const row = fileInput.closest(".media-row");
+  const card = fileInput.closest(".question-card");
+  const status = row.querySelector('[data-role="media-upload-status"]');
+  const urlInput = row.querySelector(".q-media-url");
+  const typeSelect = row.querySelector(".q-media-type");
+
+  const showStatus = (text) => { status.textContent = text; status.hidden = false; };
+
+  if (!/^(image|audio|video)\//.test(file.type)) {
+    return showStatus("Please choose an image, audio, or video file.");
+  }
+  if (file.size > MAX_MEDIA_BYTES) {
+    return showStatus("That file is too big (25MB max). Try a smaller one, or paste a link instead.");
+  }
+
+  typeSelect.value = file.type.split("/")[0];
+  showStatus("Uploading…");
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+  const path = `${currentWeek.id}/${crypto.randomUUID()}-${safeName}`;
+
+  const { error } = await db.storage.from("question-media").upload(path, file, {
+    cacheControl: "3600",
+    upsert: false,
+    contentType: file.type,
+  });
+  if (error) return showStatus(`Upload failed: ${error.message}`);
+
+  const { data } = db.storage.from("question-media").getPublicUrl(path);
+  urlInput.value = data.publicUrl;
+  urlInput.dispatchEvent(new Event("input", { bubbles: true }));
+
+  showStatus("Uploaded ✓");
+  const q = questions.find((x) => x.clientId === card.dataset.clientId);
+  if (q) q.saved = false;
 }
 
 function renderPreview() {
@@ -810,6 +862,9 @@ $("questions-list").addEventListener("input", (e) => {
 });
 
 $("questions-list").addEventListener("change", (e) => {
+  const fileInput = e.target.closest(".q-media-file");
+  if (fileInput) return handleMediaUpload(fileInput);
+
   const typeSelect = e.target.closest(".q-type");
   if (!typeSelect) return;
 
