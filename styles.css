@@ -820,6 +820,40 @@ body.house-dim .page-strip{
 .results-item.is-partial .results-verdict{ color:var(--gold); background:rgba(255,197,49,.08); }
 .results-item.is-wrong .results-verdict{ color:var(--red); background:rgba(255,84,112,.08); }
 
+/* ================= the joker: stake bar + reveal stamp ================= */
+/* magenta throughout — "act here / this is your move" — never gold, which
+   is reserved for Start the quiz and Reveal the winners. */
+.joker-bar{
+  display:flex; align-items:center; gap:.8rem; flex-wrap:wrap;
+  margin:.85rem 0 0; padding:.7rem .9rem;
+  background:linear-gradient(180deg, var(--cab-2), var(--cab));
+  border:1px dashed rgba(255,45,149,.55); border-radius:12px;
+}
+.joker-bar.is-staked{
+  border:1px solid var(--magenta);
+  box-shadow:0 0 0 1px var(--magenta), 0 0 22px rgba(255,45,149,.32);
+}
+.joker-text{ margin:0; flex:1 1 12rem; font-size:.9rem; color:var(--cream); }
+.joker-bar.is-staked .joker-text{ color:#fff; }
+.joker-btn{ border-color:rgba(255,45,149,.5); }
+.joker-btn:hover{ border-color:var(--magenta); color:var(--magenta); }
+
+/* the staked question in the reveal: a full magenta ring (not a side-tab)
+   and a rotated rubber stamp calling the outcome */
+.results-item.is-jokered{
+  position:relative;
+  border-color:var(--magenta);
+  box-shadow:0 0 0 1px var(--magenta), 0 0 26px rgba(255,45,149,.28);
+}
+.joker-stamp{
+  position:absolute; top:0; right:1rem; transform:translateY(-55%) rotate(-3deg);
+  font-family:var(--font-display); font-size:.7rem; letter-spacing:.02em;
+  padding:.28rem .6rem; border-radius:7px; color:var(--ink);
+  box-shadow:0 3px 0 rgba(0,0,0,.4);
+}
+.joker-stamp.is-won{ background:var(--magenta); color:#fff; }
+.joker-stamp.is-lost{ background:var(--screen); color:var(--dim); border:1px solid var(--line); box-shadow:inset 0 2px 0 rgba(0,0,0,.55); }
+
 /* streak moments inside the results run */
 .streak-banner{
   font-family:var(--font-display); font-size:1.05rem; line-height:1.25;

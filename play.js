@@ -4,6 +4,7 @@ import { mediaRendererMarkup } from "./media-utils.js";
 import { sfx } from "./sound.js";
 import { animateReorder, reducedMotion, delay, streakShock } from "./fx.js";
 import { streakSegments, streakLine, streakBreakLine, STREAK_MIN } from "./streaks.js";
+import { jokerPoints } from "./jokers.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -21,6 +22,9 @@ let weekStatus = null;
 let currentIndex = 0;    // which question is being browsed right now
 let lastBrowseSig = null; // skip re-rendering the browse view when nothing actually changed,
                            // so a poll cycle never wipes out a half-typed answer
+let jokerSupported = false; // true once live_state returns the my_joker field, i.e. the
+                            // jokers migration (sql/17_jokers.sql) has been applied.
+                            // Until then the joker bar stays hidden — fail soft.
 
 /* ============================================================
    BOOT
@@ -141,7 +145,8 @@ async function refreshState() {
   const { data, error } = await db.rpc("live_state", { p_week_id: currentWeek.id });
   if (error) return; // transient - the next poll or realtime event will retry
 
-  const rows = (data || []).map((row) => ({ ...row, media: row.media || [] }));
+  if (data && data[0] && Object.prototype.hasOwnProperty.call(data[0], "my_joker")) jokerSupported = true;
+  const rows = (data || []).map((row) => ({ ...row, media: row.media || [], my_joker: !!row.my_joker }));
   const first = rows[0];
   if (!first) return;
 
@@ -193,7 +198,7 @@ function render() {
 }
 
 function browseSig() {
-  return `${currentIndex}|${questions.map((q) => `${q.question_id}:${q.my_answer || ""}`).join(",")}`;
+  return `${currentIndex}|${questions.map((q) => `${q.question_id}:${q.my_answer || ""}:${q.my_joker ? "J" : ""}`).join(",")}`;
 }
 
 /* ============================================================
@@ -233,6 +238,75 @@ function renderBrowse() {
 
   const answeredCount = questions.filter((x) => x.my_answer).length;
   $("answered-count").textContent = `${answeredCount} of ${questions.length} answered so far`;
+
+  renderJokerBar();
+}
+
+/* ============================================================
+   THE JOKER — one stake per week, double or nothing. Chosen
+   before final submission (so it leaks nothing about correctness);
+   the doubling/zeroing lands in the reveal below and in the
+   server-side finalize.
+   ============================================================ */
+function renderJokerBar() {
+  const bar = $("joker-bar");
+  if (!jokerSupported) { bar.hidden = true; return; }
+  const jokerIndex = questions.findIndex((x) => x.my_joker);
+  const here = jokerIndex === currentIndex;
+
+  let msg, btnLabel, action;
+  if (jokerIndex === -1) {
+    msg = "🃏 One joker this week. Stake it on your surest answer — double or nothing, full marks only.";
+    btnLabel = "Stake joker here";
+    action = "set";
+  } else if (here) {
+    msg = "🃏 Joker staked here. A full-marks answer pays double; anything less scores zero.";
+    btnLabel = "Take it back";
+    action = "clear";
+  } else {
+    msg = `🃏 Joker is on Q${questions[jokerIndex].q_number}. Fancy this one more?`;
+    btnLabel = "Move joker here";
+    action = "set";
+  }
+
+  bar.hidden = false;
+  bar.className = `joker-bar ${here ? "is-staked" : ""}`;
+  bar.innerHTML =
+    `<p class="joker-text">${msg}</p>` +
+    `<button type="button" class="btn btn-small joker-btn" data-action="${action}">${esc(btnLabel)}</button>`;
+}
+
+$("joker-bar").addEventListener("click", (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  setJoker(btn.dataset.action === "clear" ? null : questions[currentIndex].question_id);
+});
+
+async function setJoker(questionId) {
+  const err = $("play-error");
+  err.hidden = true;
+
+  const { error } = await db.rpc("set_joker", { p_week_id: currentWeek.id, p_question_id: questionId });
+  if (error) {
+    err.textContent = error.message;
+    err.hidden = false;
+    return;
+  }
+
+  questions.forEach((x) => { x.my_joker = false; });
+  if (questionId) {
+    const q = questions.find((x) => x.question_id === questionId);
+    if (q) q.my_joker = true;
+  }
+  sfx.tick();
+  forceRenderBrowse();
+}
+
+/* Points a question actually earns once the joker is settled:
+   staked + full marks doubles it, staked + anything else zeroes it. */
+function effectivePoints(q) {
+  const verdict = q.my_answer ? (q.my_verdict || "wrong") : "wrong";
+  return jokerPoints(q.my_points, verdict, q.my_joker);
 }
 
 $("play-prev").addEventListener("click", () => {
@@ -317,12 +391,17 @@ function resultRowHTML(q, extra = "") {
   const verdict = q.my_answer ? (q.my_verdict || "wrong") : "wrong";
   const verdictLabel = !q.my_answer ? "Didn't answer" : verdict === "correct" ? "Full marks" : verdict === "partial" ? "Half marks" : "No marks";
 
+  const jokerStamp = q.my_joker
+    ? `<span class="joker-stamp ${verdict === "correct" ? "is-won" : "is-lost"}">${verdict === "correct" ? "Joker · doubled" : "Joker · lost"}</span>`
+    : "";
+
   return `
-    <li class="results-item is-${verdict} ${extra}">
+    <li class="results-item is-${verdict} ${q.my_joker ? "is-jokered" : ""} ${extra}">
+      ${jokerStamp}
       <p class="results-prompt">Q${q.q_number}. ${esc(q.prompt)}</p>
       <p class="results-mine">Your answer: ${mine ? esc(mine) : "nothing"}</p>
       <p class="results-correct">Correct answer: ${esc(correct)}</p>
-      <p class="results-verdict">${verdictLabel} · ${fmtPoints(q.my_points || 0)} pts</p>
+      <p class="results-verdict">${verdictLabel} · ${fmtPoints(effectivePoints(q))} pts</p>
     </li>`;
 }
 
@@ -342,7 +421,7 @@ function resultsSequence() {
 
   const items = [];
   questions.forEach((q, i) => {
-    items.push({ kind: "answer", verdict: verdicts[i], points: Number(q.my_points) || 0, html: (x) => resultRowHTML(q, x) });
+    items.push({ kind: "answer", verdict: verdicts[i], jokered: !!q.my_joker, points: effectivePoints(q), html: (x) => resultRowHTML(q, x) });
     const b = bannerAfter.get(i);
     if (b) {
       items.push({
@@ -356,7 +435,7 @@ function resultsSequence() {
 
 function renderResults() {
   if (revealing) return;
-  const total = questions.reduce((sum, q) => sum + (Number(q.my_points) || 0), 0);
+  const total = questions.reduce((sum, q) => sum + effectivePoints(q), 0);
   const seenKey = `tf-reveal-${currentWeek.id}`;
   const items = resultsSequence();
 
@@ -384,7 +463,9 @@ async function runReveal(items) {
     requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove("is-veiled")));
 
     if (it.kind === "answer") {
-      if (it.verdict === "correct") sfx.chime();
+      if (it.jokered && it.verdict === "correct") { sfx.sting(); streakShock(); }
+      else if (it.jokered) sfx.womp();
+      else if (it.verdict === "correct") sfx.chime();
       else if (it.verdict === "partial") sfx.tick();
       running += it.points;
       const totalEl = $("results-total");
