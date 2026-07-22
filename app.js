@@ -2,7 +2,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { SUPABASE_URL, SUPABASE_ANON_KEY, LOGIN_DOMAIN } from "./config.js";
 import { fireConfetti, countUp } from "./fx.js";
 import { fetchSeason, badgeChips, streakChip, renderSeasonRail } from "./season.js";
-import { rivalryLine } from "./needle.js";
+import { rivalryLine, headToHead } from "./needle.js";
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -12,6 +12,12 @@ const emailFor = (slug) => `${slug}@${LOGIN_DOMAIN}`;
 let roster = [];
 let mySlug = null;
 let myPlayerId = null;
+
+// kept at module scope so the profile modal can read the board it was
+// opened from without another round trip
+let boardRanked = [];
+let boardSeason = null; // set to the loaded season in showBoard; falls back to EMPTY_SEASON
+let boardMeId = null;
 
 /* ============================================================
    BOOT
@@ -170,6 +176,8 @@ async function showBoard(session) {
   $("whoami-name").textContent = meRow ? meRow.display_name : "Signed in";
 
   const ranked = withRanks(rows);
+  boardRanked = ranked;
+  boardMeId = meRow ? meRow.player_id : null;
 
   // Paint the standings straight away, before the season RPCs land -
   // badge chips fill in a moment later once the season data arrives.
@@ -197,6 +205,7 @@ async function showBoard(session) {
   // Season layer streams in when its heavier queries return, then the
   // rankings re-render with badge chips and the rail fills.
   const season = await seasonReq;
+  boardSeason = season;
   renderRest(ranked.slice(3), meSlug, season);
   renderSeasonRail(db, season, ranked);
 }
@@ -312,7 +321,7 @@ function renderPodium(top) {
     return `
       <div class="plinth p${i + 1}">
         <span class="medal">${["1st", "2nd", "3rd"][i]}</span>
-        <span class="who">${crown}${esc(r.display_name)}</span>
+        <span class="who">${crown}<button type="button" class="who-link" data-player-id="${r.player_id}">${esc(r.display_name)}</button></span>
         <span class="pts" data-pts="${r.total_points}">${fmt(r.total_points)}</span>
         <span class="sub">${r.weeks_played} quizzes</span>
       </div>`;
@@ -321,6 +330,69 @@ function renderPodium(top) {
   // roll each podium total up from zero on arrival, like a score reel
   $("podium").querySelectorAll(".pts").forEach((el) =>
     countUp(el, el.dataset.pts, { format: fmt }));
+}
+
+/* ============================================================
+   PLAYER PROFILE MODAL — built entirely from the board and season
+   data already in hand (public aggregates only; individual answers
+   stay private), so it needs no extra round trip and fails soft.
+   ============================================================ */
+document.addEventListener("click", (e) => {
+  const link = e.target.closest(".who-link[data-player-id]");
+  if (link) { openProfile(link.dataset.playerId); return; }
+  if (e.target.closest("#profile-close") || e.target.id === "profile-overlay") closeProfile();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeProfile(); });
+
+function openProfile(playerId) {
+  const season = boardSeason || EMPTY_SEASON;
+  const row = boardRanked.find((r) => r.player_id === playerId);
+  if (!row) return;
+
+  const meRow = boardMeId ? boardRanked.find((r) => r.player_id === boardMeId) : null;
+  const badges = season.byPlayer.get(playerId) || [];
+  const streak = season.streaks?.get(playerId);
+  const isMe = playerId === boardMeId;
+
+  const stat = (label, value) => `
+    <div class="profile-stat">
+      <span class="profile-stat-value">${value}</span>
+      <span class="profile-stat-label">${label}</span>
+    </div>`;
+
+  const badgeShelf = badges.length
+    ? `<ul class="profile-badges">${badges.map((b) => `
+        <li><span class="badge-chip">${b.abbr}</span>
+          <span class="profile-badge-text"><b>${esc(b.name)}</b><span>${esc(b.detail)}</span></span></li>`).join("")}</ul>`
+    : `<p class="hint">No badges yet — the season is young.</p>`;
+
+  const h2h = headToHead(meRow, row);
+  const streakLine = streak && streak.current >= 2
+    ? `<p class="profile-streak">🔥 On a ${streak.current}-quiz attendance streak${streak.best > streak.current ? ` (best: ${streak.best})` : ""}.</p>`
+    : "";
+
+  $("profile-body").innerHTML = `
+    <h2 class="card-title" id="profile-name">${esc(row.display_name)}${isMe ? " (you)" : ""}</h2>
+    <div class="profile-stats">
+      ${stat("Rank", ordinal(row.rank))}
+      ${stat("Points", fmt(row.total_points))}
+      ${stat("Quizzes", row.weeks_played)}
+      ${stat("Best week", fmt(row.best_week))}
+      ${stat("Average", fmt(row.avg_points))}
+    </div>
+    ${streakLine}
+    ${h2h ? `<p class="profile-h2h">${esc(h2h)}</p>` : ""}
+    <h3 class="profile-subhead">Badge shelf</h3>
+    ${badgeShelf}`;
+
+  const overlay = $("profile-overlay");
+  overlay.hidden = false;
+  $("profile-close").focus();
+}
+
+function closeProfile() {
+  const overlay = $("profile-overlay");
+  if (overlay) overlay.hidden = true;
 }
 
 function renderRivalry(ranked, meRow) {
@@ -335,7 +407,7 @@ function renderRest(rows, meSlug, season) {
   $("rankings").innerHTML = rows.map((r) => `
     <li class="${slugify(r.display_name) === meSlug ? "is-me" : ""}">
       <span class="rank">${ordinal(r.rank)}</span>
-      <span class="name">${esc(r.display_name)}${badgeChips(season, r.player_id)}${streakChip(season, r.player_id)}</span>
+      <span class="name"><button type="button" class="who-link" data-player-id="${r.player_id}">${esc(r.display_name)}</button>${badgeChips(season, r.player_id)}${streakChip(season, r.player_id)}</span>
       <span class="played">${r.weeks_played} quizzes</span>
       <span class="score">${fmt(r.total_points)}</span>
     </li>`).join("");

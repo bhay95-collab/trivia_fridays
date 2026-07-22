@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { rivalryLine } from "../needle.js";
+import { rivalryLine, headToHead } from "../needle.js";
 
 const ranked = [
   { player_id: "a", display_name: "Ada", total_points: 54, weeks_played: 4 },
@@ -32,4 +32,19 @@ test("a player who hasn't played gets no line", () => {
 
 test("an unknown player id yields no line", () => {
   assert.equal(rivalryLine(ranked, "zzz"), "");
+});
+
+test("head-to-head reads from the viewer's side", () => {
+  const me = ranked[3];   // Di, 37.5
+  const them = ranked[0]; // Ada, 54
+  assert.equal(headToHead(me, them), "You're 16.5 behind Ada.");
+  assert.equal(headToHead(them, me), "You're 16.5 ahead of Di.");
+});
+
+test("head-to-head is empty on your own card", () => {
+  assert.equal(headToHead(ranked[0], ranked[0]), "");
+});
+
+test("head-to-head reports a level score", () => {
+  assert.equal(headToHead(ranked[1], ranked[2]), "You're level with Cy.");
 });

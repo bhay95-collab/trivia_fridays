@@ -32,3 +32,14 @@ export function rivalryLine(ranked, meId) {
   if (gap === 0) return `Level with ${above.display_name} — the tie-break is the next right answer.`;
   return `${fmt(gap)} behind ${above.display_name}. One good week and it's yours.`;
 }
+
+/* One-line head-to-head for a profile card: where the signed-in player
+   stands against the person whose profile they're looking at. Empty
+   when it's their own card, or when either hasn't played. */
+export function headToHead(me, them) {
+  if (!me || !them || me.player_id === them.player_id || !me.weeks_played) return "";
+  const diff = Number(me.total_points) - Number(them.total_points);
+  if (diff === 0) return `You're level with ${them.display_name}.`;
+  if (diff > 0) return `You're ${fmt(diff)} ahead of ${them.display_name}.`;
+  return `You're ${fmt(-diff)} behind ${them.display_name}.`;
+}
