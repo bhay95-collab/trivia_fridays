@@ -230,7 +230,12 @@ function renderBootLog(overlay, holdMs) {
     .join("");
 }
 
-export function startBoot(overlay, { minMs = 10000, capMs = 14000 } = {}) {
+// How long the self-test read-out spreads across. The screen holds for
+// `minMs` (longer), but the log keeps this pacing so the lines print at
+// their usual speed and simply sit finished for the extra beat.
+const BOOT_LOG_MS = 10000;
+
+export function startBoot(overlay, { minMs = 13000, capMs = 17000 } = {}) {
   if (!overlay) return { reveal() {} };
   if (reducedMotion()) { overlay.hidden = true; return { reveal() {} }; }
 
@@ -241,7 +246,7 @@ export function startBoot(overlay, { minMs = 10000, capMs = 14000 } = {}) {
   } catch (_) { /* storage blocked (private mode) — just boot */ }
 
   overlay.hidden = false;
-  renderBootLog(overlay, minMs);
+  renderBootLog(overlay, BOOT_LOG_MS);
   // restart cleanly if a previous boot (e.g. the sign-in screen) ran
   overlay.classList.remove("is-done");
   void overlay.offsetWidth;
