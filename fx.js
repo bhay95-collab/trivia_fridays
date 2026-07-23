@@ -137,8 +137,98 @@ export function streakShock() {
    leaderboard from elsewhere in the app doesn't replay it. The guard
    lives in sessionStorage, which survives navigations within a tab but
    clears when the tab closes — exactly a "fresh visit" boundary.
+
+   Only a handful of self-test lines print per boot, drawn at random
+   from a deep pool below, so it reads unhurried and never the same
+   twice running.
    ============================================================ */
 const BOOT_FLAG = "tf_booted";
+
+// How many roast/self-test lines print between the header and the
+// closer. Kept small so each has room to breathe across the hold.
+const BOOT_TEST_LINES = 5;
+
+// The bench. `s` is the status readout, `k` its colour class
+// (ok = green, warn = gold, bad = pink). A random handful runs each boot.
+const BOOT_POOL = [
+  { t: "CATHODE RAY WARM-UP",             s: "OK",     k: "ok" },
+  { t: "PHOSPHOR REALIGNMENT",            s: "OK",     k: "ok" },
+  { t: "DUSTING OFF HIGH SCORES",         s: "OK",     k: "ok" },
+  { t: "REHEATING STALE EXCUSES",         s: "OK",     k: "ok" },
+  { t: "PRETEND-SHUFFLING QUESTIONS",     s: "OK",     k: "ok" },
+  { t: "COUNTING GOOGLE CHEATERS",        s: "47",     k: "warn" },
+  { t: "CHECKING IF YOU STUDIED",         s: "NO",     k: "bad" },
+  { t: "INFLATING FALSE CONFIDENCE",      s: "OK",     k: "ok" },
+  { t: "BUFFERING HOT TAKES",             s: "OK",     k: "ok" },
+  { t: "LOWERING EXPECTATIONS",           s: "DONE",   k: "ok" },
+  { t: "BLAMING THE HOST",                s: "OK",     k: "ok" },
+  { t: "WARMING UP THE WOODEN SPOON",     s: "1 READY", k: "warn" },
+  { t: "LOCATING YOUR LAST BRAINCELL",    s: "404",    k: "bad" },
+  { t: "SHARPENING PETTY RIVALRIES",      s: "OK",     k: "ok" },
+  { t: "TALLYING WRONG ANSWERS",          s: "LOTS",   k: "warn" },
+  { t: "CONFISCATING PHONES",             s: "OK",     k: "ok" },
+  { t: "REVIEWING YOUR APPEAL",           s: "DENIED", k: "bad" },
+  { t: "MEASURING TRASH TALK",            s: "98%",    k: "warn" },
+  { t: "OVERRULING THE JUDGES",           s: "OK",     k: "ok" },
+  { t: "DEFROSTING LAST PLACE",           s: "OK",     k: "ok" },
+  { t: "PRICING THE BAR TAB",             s: "OUCH",   k: "bad" },
+  { t: "CUEING NEARLY-RIGHT ANSWERS",     s: "OK",     k: "ok" },
+  { t: "AWARDING PITY POINTS",            s: "0",      k: "warn" },
+  { t: "SUMMONING OBSCURE 80s FACTS",     s: "OK",     k: "ok" },
+  { t: "IGNORING THE HOUSE RULES",        s: "OK",     k: "ok" },
+  { t: "FACT-CHECKING THAT ONE GUY",      s: "WRONG",  k: "bad" },
+];
+
+// Fisher–Yates, non-mutating: returns the first n of a shuffled copy.
+function sample(arr, n) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a.slice(0, n);
+}
+
+// Rebuild the self-test read-out: fixed header, a random run of pool
+// lines, then the blinking-cursor closer. Line reveals are timed inline
+// and spread across `holdMs` so the sequence fills the hold instead of
+// rattling through in the first couple of seconds.
+function renderBootLog(overlay, holdMs) {
+  const log = overlay.querySelector(".boot-log");
+  if (!log) return;
+
+  const COL = 30; // status column: pad each label out to here with dots
+  const dots = (label) => ".".repeat(Math.max(3, COL - label.length));
+  const test = ({ t, s, k }) =>
+    `  ${t} ${dots(t)} <span class="${k}">${s}</span>`;
+
+  const rows = [
+    "<b>TRIVIA FRIDAYS</b> ENTERTAINMENT SYSTEM",
+    "(C) 1982   ·   ALL RIGHTS RESERVED",
+    " ",
+    ...sample(BOOT_POOL, BOOT_TEST_LINES).map(test),
+    `  RECALLING THE SEASON ${dots("RECALLING THE SEASON")} <span class="boot-cursor">&#9608;</span>`,
+  ];
+
+  // Header prints quickly; the test run + closer spread evenly from
+  // ~1.6s out to shortly before the reveal.
+  const hold = holdMs / 1000;
+  const first = 1.6;
+  const last = Math.max(first + 1, hold - 0.8);
+  const spread = last - first;
+  const testCount = rows.length - 3; // tests + closer
+
+  const delayFor = (i) => {
+    if (i === 0) return 0.45;
+    if (i === 1) return 0.7;
+    if (i === 2) return 0.9;
+    return first + ((i - 3) / (testCount - 1)) * spread;
+  };
+
+  log.innerHTML = rows
+    .map((html, i) => `<span class="ln" style="animation-delay:${delayFor(i).toFixed(2)}s">${html}</span>`)
+    .join("");
+}
 
 export function startBoot(overlay, { minMs = 10000, capMs = 14000 } = {}) {
   if (!overlay) return { reveal() {} };
@@ -151,6 +241,7 @@ export function startBoot(overlay, { minMs = 10000, capMs = 14000 } = {}) {
   } catch (_) { /* storage blocked (private mode) — just boot */ }
 
   overlay.hidden = false;
+  renderBootLog(overlay, minMs);
   // restart cleanly if a previous boot (e.g. the sign-in screen) ran
   overlay.classList.remove("is-done");
   void overlay.offsetWidth;
