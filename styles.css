@@ -833,34 +833,49 @@ body.house-dim .page-strip{
        trophy bronze, sitting squarely inside the core palette --- */
 .spoon{
   position:relative; overflow:hidden;
-  margin:0 0 1.4rem; padding:1.15rem 1.2rem 1.1rem;
+  margin:0 0 1.4rem; padding:1.25rem 1.2rem 1.2rem;
   border-radius:var(--radius-cab);
-  border:1px solid rgba(224,168,96,.5);
+  border:1px solid rgba(224,168,96,.6);
   background:
-    radial-gradient(120% 80% at 100% 0%, rgba(224,168,96,.12), transparent 55%),
+    radial-gradient(120% 80% at 100% 0%, rgba(224,168,96,.17), transparent 55%),
     linear-gradient(180deg, var(--screen-2), var(--screen));
-  box-shadow:var(--drop), 0 0 26px rgba(224,168,96,.16), inset 0 1px 0 rgba(255,255,255,.04);
+  box-shadow:var(--drop), 0 0 30px rgba(224,168,96,.2), inset 0 1px 0 rgba(255,255,255,.05);
   font-size:.95rem; line-height:1.5; color:#F0D9BC;
 }
-.spoon-tab{
-  display:flex; align-items:center; gap:.55rem;
-  font:700 .58rem var(--font-mono); letter-spacing:.22em; text-transform:uppercase;
-  color:var(--spoon); margin-bottom:.5rem;
+/* bronze top accent, ends faded into the corners — same treatment as
+   the supporting panels, so the spoon reads as part of that system */
+.spoon::before{
+  content:""; position:absolute; left:14px; right:14px; top:0; height:2px; border-radius:2px;
+  background:linear-gradient(90deg, var(--spoon-deep), var(--spoon), #FFD9A6);
+  box-shadow:0 0 10px rgba(224,168,96,.3);
+  -webkit-mask:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+          mask:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
 }
-.spoon-tab::before{
-  content:""; width:7px; height:7px; border-radius:50%; flex:0 0 auto;
-  background:var(--spoon); box-shadow:0 0 8px var(--spoon);
+/* the "achievement unlocked" label is a physical bronze tab, screwed on
+   like the gold panel titles (shame-panel variant) */
+.spoon-tab{
+  display:inline-flex; align-items:center; gap:.4rem;
+  font:700 .62rem var(--font-mono); letter-spacing:.2em; text-transform:uppercase;
+  color:var(--ink);
+  background:linear-gradient(180deg, #EBB878, var(--spoon));
+  padding:.34rem .62rem .3rem; border-radius:8px;
+  box-shadow:0 3px 0 var(--spoon-deep);
+  margin-bottom:.7rem;
 }
 .spoon-title{
-  display:block; font-family:var(--font-display); font-size:1.1rem; line-height:1;
-  color:var(--spoon); text-shadow:0 0 16px rgba(224,168,96,.3); margin-bottom:.55rem;
+  display:block; font-family:var(--font-display); font-size:1.35rem; line-height:1;
+  color:var(--spoon); text-shadow:0 0 18px rgba(224,168,96,.4); margin-bottom:.55rem;
 }
 .spoon-line{ margin:0; color:#F0D9BC; }
 .spoon-line b{ color:#FFE6C4; font-weight:700; }
+/* footer stat as a recessed CRT readout chip, like the hall-of-fame values */
 .spoon-foot{
-  display:block; margin-top:.7rem;
-  font-family:var(--font-mono); font-size:.68rem; letter-spacing:.14em; text-transform:uppercase;
-  color:var(--spoon); opacity:.9;
+  display:inline-block; margin-top:.85rem;
+  font-family:var(--font-mono); font-variant-numeric:tabular-nums;
+  font-size:.66rem; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--spoon);
+  background:var(--screen); padding:.3rem .6rem; border-radius:7px;
+  box-shadow:var(--inset); text-shadow:0 0 8px rgba(224,168,96,.35);
 }
 
 /* --- halls of fame & shame: a permanent high-score record module --- */
@@ -941,6 +956,10 @@ body.house-dim .page-strip{
 #fame-panel::before, #shame-panel::before,
 #badge-panel::before, .panel-console::before{
   content:""; position:absolute; left:14px; right:14px; top:0; height:2px; border-radius:2px;
+  /* Fade the ends to transparent so the accent dissolves into the
+     rounded corners instead of stopping on a hard vertical cut. */
+  -webkit-mask:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+          mask:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
 }
 /* Hall of Fame — a premium gold-and-cyan record display */
 #fame-panel::before{ background:linear-gradient(90deg, var(--gold), var(--cyan)); box-shadow:0 0 10px rgba(51,236,230,.28); }
