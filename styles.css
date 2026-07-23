@@ -1661,14 +1661,14 @@ body.page-present{ padding-bottom:9.5rem; }
   background:radial-gradient(125% 105% at 50% 50%, transparent 52%, rgba(0,0,0,.75));
 }
 
-/* the phosphor screen — everything warms up inside it. Wide enough to
-   carry the read-out across most of the tube. */
+/* the phosphor screen — everything warms up inside it. Large, wide type
+   so the short read-out still fills most of the tube. */
 .boot-screen{
   position:relative; z-index:2;
-  width:min(880px, 92vw); padding:0 1rem;
+  width:min(1040px, 94vw); padding:0 1rem;
   color:var(--cyan);
-  font:700 clamp(.62rem,2vw,.95rem)/1.9 var(--font-mono);
-  text-shadow:0 0 8px rgba(51,236,230,.55);
+  font:700 clamp(.9rem,3.1vw,1.7rem)/2.15 var(--font-mono);
+  text-shadow:0 0 10px rgba(51,236,230,.6);
   transform-origin:center center; opacity:0;
 }
 .boot.is-booting .boot-screen{
@@ -1704,8 +1704,9 @@ body.page-present{ padding-bottom:9.5rem; }
 .boot.is-booting .boot-roll{ animation:boot-roll 2.7s linear infinite; }
 @keyframes boot-roll{ 0%{ transform:translateY(-140%);} 100%{ transform:translateY(520%);} }
 
-/* the self-test read-out, printed one line at a time. Lines are spread
-   across the full hold so the roast keeps printing for the whole
+/* the self-test read-out, printed one line at a time. Each line's
+   reveal delay is set inline by fx.js (renderBootLog), spread across the
+   whole hold so the short random run keeps printing for the full
    power-on rather than finishing in the first couple of seconds. */
 .boot-log{ margin:0; white-space:pre-wrap; }
 .boot-log b{ color:var(--gold); text-shadow:0 0 9px rgba(255,197,49,.55); }
@@ -1714,22 +1715,6 @@ body.page-present{ padding-bottom:9.5rem; }
 .boot-log .bad{ color:#FF6E9C; text-shadow:0 0 9px rgba(255,110,156,.55); }
 .boot-log .ln{ display:block; opacity:0; }
 .boot.is-booting .boot-log .ln{ animation:boot-line .18s ease-out both; }
-.boot.is-booting .boot-log .ln:nth-child(1){  animation-delay:.45s; }
-.boot.is-booting .boot-log .ln:nth-child(2){  animation-delay:.70s; }
-.boot.is-booting .boot-log .ln:nth-child(3){  animation-delay:.90s; }
-.boot.is-booting .boot-log .ln:nth-child(4){  animation-delay:1.15s; }
-.boot.is-booting .boot-log .ln:nth-child(5){  animation-delay:1.7s; }
-.boot.is-booting .boot-log .ln:nth-child(6){  animation-delay:2.3s; }
-.boot.is-booting .boot-log .ln:nth-child(7){  animation-delay:2.9s; }
-.boot.is-booting .boot-log .ln:nth-child(8){  animation-delay:3.6s; }
-.boot.is-booting .boot-log .ln:nth-child(9){  animation-delay:4.3s; }
-.boot.is-booting .boot-log .ln:nth-child(10){ animation-delay:5.0s; }
-.boot.is-booting .boot-log .ln:nth-child(11){ animation-delay:5.7s; }
-.boot.is-booting .boot-log .ln:nth-child(12){ animation-delay:6.4s; }
-.boot.is-booting .boot-log .ln:nth-child(13){ animation-delay:7.1s; }
-.boot.is-booting .boot-log .ln:nth-child(14){ animation-delay:7.8s; }
-.boot.is-booting .boot-log .ln:nth-child(15){ animation-delay:8.5s; }
-.boot.is-booting .boot-log .ln:nth-child(16){ animation-delay:9.2s; }
 @keyframes boot-line{ from{ opacity:0; transform:translateY(2px); } to{ opacity:1; transform:none; } }
 .boot-cursor{ animation:boot-blink 1s steps(1,end) infinite; }
 @keyframes boot-blink{ 0%,50%{ opacity:1 } 51%,100%{ opacity:0 } }
