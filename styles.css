@@ -941,6 +941,10 @@ body.house-dim .page-strip{
 #fame-panel::before, #shame-panel::before,
 #badge-panel::before, .panel-console::before{
   content:""; position:absolute; left:14px; right:14px; top:0; height:2px; border-radius:2px;
+  /* Fade the ends to transparent so the accent dissolves into the
+     rounded corners instead of stopping on a hard vertical cut. */
+  -webkit-mask:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+          mask:linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
 }
 /* Hall of Fame — a premium gold-and-cyan record display */
 #fame-panel::before{ background:linear-gradient(90deg, var(--gold), var(--cyan)); box-shadow:0 0 10px rgba(51,236,230,.28); }
