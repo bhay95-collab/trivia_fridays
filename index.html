@@ -9,6 +9,10 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://rbkmluzoxowqftjzzsbm.supabase.co" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Barlow:wght@400;500;700&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
+<!-- The boot logo is part of the first visible frame — preload it at high
+     priority so the tube lights up with the monogram already present,
+     never popping in after the self-test text. -->
+<link rel="preload" as="image" href="trivia-fridays-boot-logo-web.png" fetchpriority="high">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body class="page-board">
@@ -19,12 +23,28 @@
      unseen behind it; app.js lifts it once the page is complete. -->
 <div class="boot" id="boot" aria-hidden="true">
   <div class="boot-roll" aria-hidden="true"></div>
-  <div class="boot-screen">
-    <!-- The self-test read-out is rebuilt by fx.js on each power-on: a
-         short run of lines drawn at random from a deep pool, so the boot
-         stays fresh. This static copy is only a fallback if the script
-         never runs. -->
-    <pre class="boot-log"><span class="ln"><b>TRIVIA FRIDAYS</b> ENTERTAINMENT SYSTEM</span><span class="ln">(C) 1982   ·   ALL RIGHTS RESERVED</span><span class="ln"> </span><span class="ln">  CATHODE RAY WARM-UP .......... <span class="ok">OK</span></span><span class="ln">  PHOSPHOR REALIGNMENT ......... <span class="ok">OK</span></span><span class="ln">  RECALLING THE SEASON ........ <span class="boot-cursor">&#9608;</span></span></pre>
+  <div class="boot-stack">
+    <!-- The cabinet's monogram, lit by the tube as it powers on. Decorative:
+         the self-test text below already names Trivia Fridays, so the logo
+         carries no alt text and stays out of the accessibility tree.
+         Intrinsic 512x512 is declared so it reserves its box and never
+         shifts the layout while decoding. -->
+    <img
+      class="boot-logo"
+      src="trivia-fridays-boot-logo-web.png"
+      width="512"
+      height="512"
+      alt=""
+      aria-hidden="true"
+      fetchpriority="high"
+    />
+    <div class="boot-screen">
+      <!-- The self-test read-out is rebuilt by fx.js on each power-on: a
+           short run of lines drawn at random from a deep pool, so the boot
+           stays fresh. This static copy is only a fallback if the script
+           never runs. -->
+      <pre class="boot-log"><span class="ln"><b>TRIVIA FRIDAYS</b> ENTERTAINMENT SYSTEM</span><span class="ln">(C) 1982   ·   ALL RIGHTS RESERVED</span><span class="ln"> </span><span class="ln">  CATHODE RAY WARM-UP .......... <span class="ok">OK</span></span><span class="ln">  PHOSPHOR REALIGNMENT ......... <span class="ok">OK</span></span><span class="ln">  RECALLING THE SEASON ........ <span class="boot-cursor">&#9608;</span></span></pre>
+    </div>
   </div>
   <div class="boot-flash" aria-hidden="true"></div>
 </div>
