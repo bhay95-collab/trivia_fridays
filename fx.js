@@ -130,10 +130,25 @@ export function streakShock() {
    Returns a handle whose reveal() lifts the overlay once the board
    is ready. Under reduced motion it removes the overlay immediately
    and does nothing else — motion OFF, page shown straight away.
+
+   The power-on is a boot-up moment, not a page transition: it plays
+   once when someone first arrives at the site and is then suppressed
+   for the rest of the browsing session, so bouncing back to the
+   leaderboard from elsewhere in the app doesn't replay it. The guard
+   lives in sessionStorage, which survives navigations within a tab but
+   clears when the tab closes — exactly a "fresh visit" boundary.
    ============================================================ */
-export function startBoot(overlay, { minMs = 2600, capMs = 6500 } = {}) {
+const BOOT_FLAG = "tf_booted";
+
+export function startBoot(overlay, { minMs = 10000, capMs = 14000 } = {}) {
   if (!overlay) return { reveal() {} };
   if (reducedMotion()) { overlay.hidden = true; return { reveal() {} }; }
+
+  // Already powered on earlier this session — skip straight to the board.
+  try {
+    if (sessionStorage.getItem(BOOT_FLAG)) { overlay.hidden = true; return { reveal() {} }; }
+    sessionStorage.setItem(BOOT_FLAG, "1");
+  } catch (_) { /* storage blocked (private mode) — just boot */ }
 
   overlay.hidden = false;
   // restart cleanly if a previous boot (e.g. the sign-in screen) ran
