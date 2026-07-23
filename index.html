@@ -14,6 +14,17 @@
 <body class="page-board">
 
 <a class="skip-link" href="#main">Skip to content</a>
+
+<!-- Arcade power-on. Opaque from first paint so the board assembles
+     unseen behind it; app.js lifts it once the page is complete. -->
+<div class="boot" id="boot" aria-hidden="true">
+  <div class="boot-screen">
+    <div class="boot-roll" aria-hidden="true"></div>
+    <pre class="boot-log"><span class="ln"><b>TRIVIA FRIDAYS</b> ENTERTAINMENT SYSTEM</span><span class="ln">(C) 198X   ·   ALL RIGHTS RESERVED</span><span class="ln"> </span><span class="ln">  CATHODE RAY WARM-UP ......... <span class="ok">OK</span></span><span class="ln">  PHOSPHOR REALIGNMENT ........ <span class="ok">OK</span></span><span class="ln">  DUSTING OFF HIGH SCORES ..... <span class="ok">OK</span></span><span class="ln">  RECALLING THE SEASON ....... <span class="boot-cursor">&#9608;</span></span></pre>
+  </div>
+  <div class="boot-flash" aria-hidden="true"></div>
+</div>
+
 <div class="crt-bezel" aria-hidden="true"></div>
 <div class="synth-horizon" aria-hidden="true">
   <div class="synth-stars"></div>
@@ -176,8 +187,6 @@
     <div id="profile-body"></div>
   </div>
 </div>
-
-<canvas id="confetti" aria-hidden="true"></canvas>
 
 <script type="module" src="neon.js"></script>
 <script type="module" src="sound.js"></script>
