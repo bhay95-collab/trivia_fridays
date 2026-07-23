@@ -1646,7 +1646,7 @@ body.page-present{ padding-bottom:9.5rem; }
   position:fixed; inset:0; z-index:100;
   background:#05030B;
   display:grid; place-items:center; overflow:hidden;
-  animation:boot-failsafe 8s linear forwards;   /* safety net if JS never reveals */
+  animation:boot-failsafe 16s linear forwards;  /* safety net if JS never reveals; must outlast the 10s hold + JS cap */
 }
 .boot[hidden]{ display:none; }
 
@@ -1661,12 +1661,13 @@ body.page-present{ padding-bottom:9.5rem; }
   background:radial-gradient(125% 105% at 50% 50%, transparent 52%, rgba(0,0,0,.75));
 }
 
-/* the phosphor screen — everything warms up inside it */
+/* the phosphor screen — everything warms up inside it. Wide enough to
+   carry the read-out across most of the tube. */
 .boot-screen{
   position:relative; z-index:2;
-  width:min(560px, 82vw); padding:0 1rem;
+  width:min(880px, 92vw); padding:0 1rem;
   color:var(--cyan);
-  font:700 clamp(.6rem,2.5vw,.82rem)/1.95 var(--font-mono);
+  font:700 clamp(.62rem,2vw,.95rem)/1.9 var(--font-mono);
   text-shadow:0 0 8px rgba(51,236,230,.55);
   transform-origin:center center; opacity:0;
 }
@@ -1692,28 +1693,43 @@ body.page-present{ padding-bottom:9.5rem; }
   79%{ opacity:.86 } 80%{ opacity:1 }
 }
 
-/* a bright hold-bar rolling down the screen (mistuned vertical hold) */
+/* a bright hold-bar rolling down the whole screen (mistuned vertical
+   hold). Sits at the top level of the overlay so it sweeps the full
+   width and height of the tube, not just the text column. */
 .boot-roll{
-  position:absolute; left:0; right:0; top:0; height:26%; z-index:3; pointer-events:none;
+  position:absolute; left:0; right:0; top:0; height:24%; z-index:3; pointer-events:none;
   background:linear-gradient(180deg, transparent,
     rgba(120,255,250,.05) 44%, rgba(190,255,252,.12) 50%, rgba(120,255,250,.05) 56%, transparent);
 }
 .boot.is-booting .boot-roll{ animation:boot-roll 2.7s linear infinite; }
 @keyframes boot-roll{ 0%{ transform:translateY(-140%);} 100%{ transform:translateY(520%);} }
 
-/* the self-test read-out, printed one line at a time */
+/* the self-test read-out, printed one line at a time. Lines are spread
+   across the full hold so the roast keeps printing for the whole
+   power-on rather than finishing in the first couple of seconds. */
 .boot-log{ margin:0; white-space:pre-wrap; }
 .boot-log b{ color:var(--gold); text-shadow:0 0 9px rgba(255,197,49,.55); }
 .boot-log .ok{ color:#7CF6B0; text-shadow:0 0 9px rgba(124,246,176,.55); }
+.boot-log .warn{ color:var(--gold); text-shadow:0 0 9px rgba(255,197,49,.55); }
+.boot-log .bad{ color:#FF6E9C; text-shadow:0 0 9px rgba(255,110,156,.55); }
 .boot-log .ln{ display:block; opacity:0; }
 .boot.is-booting .boot-log .ln{ animation:boot-line .18s ease-out both; }
-.boot.is-booting .boot-log .ln:nth-child(1){ animation-delay:.65s; }
-.boot.is-booting .boot-log .ln:nth-child(2){ animation-delay:.85s; }
-.boot.is-booting .boot-log .ln:nth-child(3){ animation-delay:1s;   }
-.boot.is-booting .boot-log .ln:nth-child(4){ animation-delay:1.2s; }
-.boot.is-booting .boot-log .ln:nth-child(5){ animation-delay:1.5s; }
-.boot.is-booting .boot-log .ln:nth-child(6){ animation-delay:1.8s; }
-.boot.is-booting .boot-log .ln:nth-child(7){ animation-delay:2.1s; }
+.boot.is-booting .boot-log .ln:nth-child(1){  animation-delay:.45s; }
+.boot.is-booting .boot-log .ln:nth-child(2){  animation-delay:.70s; }
+.boot.is-booting .boot-log .ln:nth-child(3){  animation-delay:.90s; }
+.boot.is-booting .boot-log .ln:nth-child(4){  animation-delay:1.15s; }
+.boot.is-booting .boot-log .ln:nth-child(5){  animation-delay:1.7s; }
+.boot.is-booting .boot-log .ln:nth-child(6){  animation-delay:2.3s; }
+.boot.is-booting .boot-log .ln:nth-child(7){  animation-delay:2.9s; }
+.boot.is-booting .boot-log .ln:nth-child(8){  animation-delay:3.6s; }
+.boot.is-booting .boot-log .ln:nth-child(9){  animation-delay:4.3s; }
+.boot.is-booting .boot-log .ln:nth-child(10){ animation-delay:5.0s; }
+.boot.is-booting .boot-log .ln:nth-child(11){ animation-delay:5.7s; }
+.boot.is-booting .boot-log .ln:nth-child(12){ animation-delay:6.4s; }
+.boot.is-booting .boot-log .ln:nth-child(13){ animation-delay:7.1s; }
+.boot.is-booting .boot-log .ln:nth-child(14){ animation-delay:7.8s; }
+.boot.is-booting .boot-log .ln:nth-child(15){ animation-delay:8.5s; }
+.boot.is-booting .boot-log .ln:nth-child(16){ animation-delay:9.2s; }
 @keyframes boot-line{ from{ opacity:0; transform:translateY(2px); } to{ opacity:1; transform:none; } }
 .boot-cursor{ animation:boot-blink 1s steps(1,end) infinite; }
 @keyframes boot-blink{ 0%,50%{ opacity:1 } 51%,100%{ opacity:0 } }
