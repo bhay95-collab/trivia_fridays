@@ -119,15 +119,23 @@ export function streakShock() {
    ============================================================ */
 const CONFETTI_COLORS = ["#FF2D95", "#25E8E2", "#FFC531", "#FFF3DE"];
 
-export function fireConfetti(canvas, { count = 160, frames = 340 } = {}) {
+/* A short celebratory burst. `heroBand` (0–1) caps how far down the
+   screen pieces spawn and fall, so on the leaderboard the reward stays
+   in the hero region and clears quickly; the Present screen leaves it
+   full-height. Skipped entirely under reduced motion. */
+export function fireConfetti(canvas, { count = 70, frames = 200, heroBand = 1 } = {}) {
   if (reducedMotion() || !canvas) return;
   const ctx = canvas.getContext("2d");
   canvas.width = innerWidth;
   canvas.height = innerHeight;
 
+  const floor = canvas.height * heroBand; // pieces settle/clear by here
+  // full-height spawn when unconstrained (Present screen), a tight upper
+  // cluster when constrained to a hero band (leaderboard)
+  const spawnSpread = heroBand < 1 ? canvas.height * 0.4 * heroBand : canvas.height;
   const bits = Array.from({ length: count }, () => ({
     x: Math.random() * canvas.width,
-    y: -20 - Math.random() * canvas.height,
+    y: -20 - Math.random() * spawnSpread,
     r: 3 + Math.random() * 5,
     vy: 2 + Math.random() * 3,
     vx: -1 + Math.random() * 2,
@@ -139,6 +147,7 @@ export function fireConfetti(canvas, { count = 160, frames = 340 } = {}) {
   (function trickle() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (const b of bits) {
+      if (b.y > floor) continue; // don't rain past the hero band
       b.y += b.vy;
       b.x += b.vx;
       b.a += 0.1;
@@ -146,6 +155,6 @@ export function fireConfetti(canvas, { count = 160, frames = 340 } = {}) {
       ctx.fillRect(b.x, b.y, b.r, b.r * 2.2 * Math.abs(Math.cos(b.a)));
     }
     if (++elapsed < frames) requestAnimationFrame(trickle);
-    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    else ctx.clearRect(0, 0, canvas.width, canvas.height); // leave no trace
   })();
 }

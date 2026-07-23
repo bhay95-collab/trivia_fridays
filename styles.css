@@ -111,20 +111,38 @@ main{ max-width:1200px; margin:0 auto; }
 }
 .skip-link:focus{ left:0; }
 
-/* --- chasing light strip across the very top: two-colour marquee --- */
-.bulbs{
-  position:fixed; inset:0 0 auto 0; height:7px; z-index:9;
-  background:repeating-linear-gradient(90deg,
-    var(--gold) 0 6px, transparent 6px 20px,
-    var(--magenta) 20px 26px, transparent 26px 40px);
-  background-size:40px 100%;
-  filter:drop-shadow(0 0 6px rgba(255,197,49,.7));
-  opacity:.9;
-  animation:chase 1.6s linear infinite;
+/* --- CRT screen bezel ---------------------------------------------------
+   A thin, fixed moulded frame around the whole viewport so the site reads
+   as if it's running inside the glass of a restored arcade monitor. Built
+   from inset box-shadows on one decorative, click-through element — no
+   structural markup, no horizontal overflow, no layout shift. Deep
+   graphite/aubergine with a soft top-left highlight, a darker bottom-right
+   inset, softly rounded inner corners and a whisper of phosphor sheen. */
+.crt-bezel{
+  --bezel:11px;
+  position:fixed; inset:0; z-index:45; pointer-events:none;
+  border-radius:18px;
+  box-shadow:
+    /* inner-lip highlight, top-left */
+    inset 3px 3px 3px calc(-1 * var(--bezel) + 2px) rgba(176,164,214,.16),
+    /* inner-lip shadow, bottom-right */
+    inset -3px -3px 5px calc(-1 * var(--bezel) + 2px) rgba(0,0,0,.75),
+    /* faint internal phosphor reflection just inside the glass */
+    inset 0 0 26px rgba(51,236,230,.05),
+    /* the moulded bezel body */
+    inset 0 0 0 var(--bezel) #0b0912,
+    /* a hair of outer definition against the desktop */
+    inset 0 0 0 calc(var(--bezel) + 1px) rgba(0,0,0,.85);
 }
-@keyframes chase{ to{ background-position:40px 0; } }
-/* winner moment: the lights lose their minds */
-body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
+/* four recessed corner fasteners — larger screens only */
+.crt-bezel::after{
+  content:""; position:absolute; inset:0; border-radius:inherit;
+  background:
+    radial-gradient(circle 2px at 15px 15px, rgba(0,0,0,.9) 0 2px, rgba(150,140,180,.10) 2.5px 3px, transparent 3.5px),
+    radial-gradient(circle 2px at calc(100% - 15px) 15px, rgba(0,0,0,.9) 0 2px, rgba(150,140,180,.10) 2.5px 3px, transparent 3.5px),
+    radial-gradient(circle 2px at 15px calc(100% - 15px), rgba(0,0,0,.9) 0 2px, rgba(150,140,180,.10) 2.5px 3px, transparent 3.5px),
+    radial-gradient(circle 2px at calc(100% - 15px) calc(100% - 15px), rgba(0,0,0,.9) 0 2px, rgba(150,140,180,.10) 2.5px 3px, transparent 3.5px);
+}
 
 /* ================= control deck (header) ================= */
 .deck{
@@ -209,14 +227,14 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
 /* ================= index masthead: the signage ================= */
 .masthead{
   display:flex; flex-direction:column; align-items:center; text-align:center;
-  padding:1.5rem 0 .5rem;
+  padding:.8rem 0 .4rem;
 }
 
 /* a small marquee header tab that names what the cabinet is running */
 .marquee-tag{
   display:inline-flex; align-items:center; gap:.55rem;
   font:700 .66rem var(--font-mono); letter-spacing:.28em; text-transform:uppercase;
-  color:var(--gold); margin:0 0 .95rem;
+  color:var(--gold); margin:0 0 .7rem;
   padding:.32rem .8rem; border-radius:999px;
   border:1px solid rgba(255,197,49,.35); background:rgba(255,197,49,.06);
 }
@@ -229,7 +247,7 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
    and corner screws — the visual anchor of the whole cabinet */
 .marquee-sign{
   display:inline-block; position:relative;
-  padding:1.5rem 2.8rem 1.35rem;
+  padding:1rem 2.7rem .9rem;
   background:
     radial-gradient(120% 140% at 50% -10%, rgba(255,61,154,.10), transparent 55%),
     linear-gradient(180deg, #120826, #0A0417);
@@ -268,30 +286,30 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
 
 .wordmark{
   font-family:var(--font-display);
-  margin:0; line-height:.92;
-  font-size:clamp(2.5rem, 9.2vw, 5.2rem);
+  margin:0; line-height:.88;
+  font-size:clamp(2.3rem, 8.4vw, 4.6rem);
   display:flex; flex-direction:column; align-items:center;
   letter-spacing:.005em;
 }
-/* neon tube: bright white core wrapped in tight, controlled coloured
-   halos — top line cyan, bottom line magenta. Falloff is deliberately
-   short so the letterforms stay crisp rather than bleeding into a blur. */
+/* neon tube: bright white core with a crisp inner glow and a reduced
+   outer bloom, so the letterforms read as sharp physical signage rather
+   than blurred CSS text. Top line cyan, bottom line magenta. */
 .wordmark span{ display:block; }
 .wordmark span:first-child{
   color:#fff;
   text-shadow:
-    0 0 3px #fff,
-    0 0 9px var(--cyan),
-    0 0 20px rgba(51,236,230,.75),
-    0 0 40px rgba(51,236,230,.35);
+    0 0 2px #fff,
+    0 0 7px var(--cyan),
+    0 0 16px rgba(51,236,230,.7),
+    0 0 32px rgba(51,236,230,.28);
 }
 .wordmark span:last-child{
   color:#fff; margin-top:.02em;
   text-shadow:
-    0 0 3px #fff,
-    0 0 10px var(--magenta),
-    0 0 22px rgba(255,61,154,.78),
-    0 0 44px rgba(255,61,154,.4);
+    0 0 2px #fff,
+    0 0 8px var(--magenta),
+    0 0 18px rgba(255,61,154,.72),
+    0 0 35px rgba(255,61,154,.32);
 }
 
 /* ================= neon tube flicker ================= */
@@ -314,14 +332,14 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
   57%{ opacity:.35 } 58%{ opacity:.85 } 88%{ opacity:.5 } 89%{ opacity:1 }
 }
 .eyebrow{
-  max-width:760px; margin:1rem auto 0;
-  font-size:clamp(.95rem, 2.4vw, 1.3rem); letter-spacing:.16em; text-transform:uppercase;
+  max-width:760px; margin:.75rem auto 0;
+  font-size:clamp(.95rem, 2.4vw, 1.25rem); letter-spacing:.16em; text-transform:uppercase;
   font-weight:700; color:var(--cyan);
-  text-shadow:0 0 16px rgba(51,236,230,.3);
+  text-shadow:0 0 14px rgba(51,236,230,.28);
 }
 .masthead .tagline{
-  margin:.5rem auto 0; max-width:640px;
-  font-size:.92rem; color:var(--dim);
+  margin:.35rem auto 0; max-width:640px;
+  font-size:.9rem; color:var(--dim);
 }
 
 /* ================= buttons: arcade hardware ================= */
@@ -457,7 +475,7 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
 }
 
 /* ================= sort toggle ================= */
-.sort-toggle{ display:flex; justify-content:center; gap:.5rem; margin-bottom:1.7rem; }
+.sort-toggle{ display:flex; justify-content:center; gap:.5rem; margin:0 0 1.3rem; }
 .sort-btn{
   width:auto; background:var(--cab-2); color:var(--dim);
   border:1px solid var(--line); border-radius:999px;
@@ -476,7 +494,7 @@ body.is-strobe .bulbs{ animation-duration:.3s; opacity:1; height:9px; }
 /* ================= the stage (bulb-framed podium) ================= */
 .stage{
   position:relative;
-  padding:2.6rem 1.4rem 1.6rem;
+  padding:2.3rem 1.4rem 1.35rem;
   background:
     radial-gradient(120% 90% at 50% 0%, rgba(255,197,49,.07), transparent 55%),
     linear-gradient(180deg, #241040, #170A2A);
@@ -626,9 +644,9 @@ body.house-dim .page-strip{
   background:linear-gradient(90deg, rgba(51,236,230,.25), transparent);
   z-index:2;
 }
-.rank{ font-family:var(--font-display); color:var(--dim); font-size:.9rem; font-variant-numeric:tabular-nums; }
-.name{ font-weight:600; display:flex; align-items:center; gap:.45rem; flex-wrap:wrap; overflow-wrap:anywhere; }
-.played{ font-size:.66rem; color:var(--dim-2); letter-spacing:.1em; font-family:var(--font-mono); text-transform:uppercase; }
+.rank{ font-family:var(--font-display); color:#E4D3F2; font-size:.92rem; font-variant-numeric:tabular-nums; }
+.name{ font-weight:600; font-size:1.02rem; display:flex; align-items:center; gap:.45rem; flex-wrap:wrap; overflow-wrap:anywhere; }
+.played{ font-size:.72rem; color:var(--dim); letter-spacing:.08em; font-family:var(--font-mono); text-transform:uppercase; }
 .score{
   font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-weight:700;
   font-size:1.1rem; color:var(--gold);
@@ -720,7 +738,7 @@ body.house-dim .page-strip{
    the values from the real leaderboard row; nothing here is hardcoded. */
 .hud{
   display:flex; flex-wrap:wrap; align-items:stretch; gap:.45rem;
-  margin:0 0 1rem; padding:.45rem;
+  margin:0 0 .7rem; padding:.45rem;
   background:linear-gradient(180deg, var(--cab-2), var(--cab));
   border:1px solid var(--cab-edge); border-radius:var(--radius-cab);
   box-shadow:var(--drop);
@@ -762,19 +780,23 @@ body.house-dim .page-strip{
 }
 .hud-exit:hover{ color:#fff; border-color:var(--magenta); }
 .hud-exit:active{ transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.4); }
+.hud-exit:focus-visible{ outline:3px solid var(--cyan); outline-offset:3px; }
 
 /* ---- announcement ticker: a dot-matrix LED board ----
    Renders the live rivalry/high-score line from needle.js. Readable
    without motion; the ● bookends and scan LED animate gently only. */
 .rivalry{
   position:relative; isolation:isolate;
-  margin:0 0 1.1rem; padding:.7rem 1rem .7rem 2.4rem;
+  margin:0 0 .75rem; padding:.65rem 1rem .65rem 2.4rem;
   border-radius:12px; overflow:hidden;
+  /* even dot-matrix wash across the whole board, no directional artefact */
   background:
-    radial-gradient(circle .9px at 2px 2px, rgba(255,197,49,.10) 0 .9px, transparent 1.3px) 0 0/4px 4px,
+    radial-gradient(circle .9px at 2px 2px, rgba(255,197,49,.09) 0 .9px, transparent 1.3px) 0 0/4px 4px,
     linear-gradient(180deg, #0C0620, var(--screen));
+  /* one coherent enclosure: full border + a deliberate full-width top
+     structural highlight (replaces the old partial upper-right line) */
   border:1px solid var(--cab-edge);
-  box-shadow:var(--inset), 0 4px 0 rgba(0,0,0,.35);
+  box-shadow:var(--inset), inset 0 1px 0 rgba(255,197,49,.14), 0 4px 0 rgba(0,0,0,.35);
   color:var(--gold); font:700 .82rem var(--font-mono);
   letter-spacing:.08em; text-transform:uppercase;
   text-shadow:0 0 10px rgba(255,197,49,.45);
@@ -900,6 +922,41 @@ body.house-dim .page-strip{
 .inline-form .field{ margin-bottom:0; flex:1 1 200px; }
 .inline-form .btn{ width:auto; flex:0 0 auto; }
 .inline-form-wide .field{ flex:1 1 160px; }
+
+/* ================= supporting-module accents =================
+   Restrained differentiation so the lower rail doesn't read as one
+   repeated card — each module keeps the cabinet system but wears a
+   distinct top accent light and its own small treatment. */
+#fame-panel, #shame-panel, #badge-panel, .panel-console{ position:relative; }
+#fame-panel::before, #shame-panel::before,
+#badge-panel::before, .panel-console::before{
+  content:""; position:absolute; left:14px; right:14px; top:0; height:2px; border-radius:2px;
+}
+/* Hall of Fame — a premium gold-and-cyan record display */
+#fame-panel::before{ background:linear-gradient(90deg, var(--gold), var(--cyan)); box-shadow:0 0 10px rgba(51,236,230,.28); }
+#fame-panel .hall-record{ color:#8FB8D6; }
+/* Hall of Shame — a slightly tarnished amber-bronze treatment */
+#shame-panel{ border-color:rgba(224,168,96,.32); }
+#shame-panel::before{ background:linear-gradient(90deg, var(--spoon-deep), var(--spoon)); box-shadow:0 0 8px rgba(224,168,96,.22); }
+/* Badge Case — a cabinet-collection of recessed achievement slots */
+#badge-panel::before{ background:linear-gradient(90deg, var(--magenta), var(--gold)); box-shadow:0 0 9px rgba(255,61,154,.24); }
+#badge-panel .badge-case{ display:flex; flex-direction:column; gap:.5rem; }
+#badge-panel .badge-case li{
+  padding:.6rem .7rem; border-bottom:0; border-radius:10px;
+  background:var(--screen); border:1px solid var(--line); box-shadow:var(--inset);
+}
+/* Topic Suggestions — a clearly interactive input console */
+.panel-console::before{ background:linear-gradient(90deg, var(--cyan), var(--magenta)); box-shadow:0 0 9px rgba(51,236,230,.24); }
+.panel-console .field > span::before{ content:"> "; color:var(--cyan); }
+.panel-console .inline-form{
+  padding:.9rem; margin-bottom:1rem; border-radius:12px;
+  background:rgba(0,0,0,.24); border:1px solid var(--line); box-shadow:var(--inset);
+}
+.panel-console input[type="text"]{ caret-color:var(--cyan); }
+.panel-console input[type="text"]:focus-visible{
+  outline:none;
+  box-shadow:inset 0 2px 0 rgba(0,0,0,.55), 0 0 0 1px var(--cyan), 0 0 14px rgba(51,236,230,.22);
+}
 
 /* ================= badges (status pills) ================= */
 .badge{
@@ -1331,44 +1388,124 @@ body.page-present{ padding-bottom:9.5rem; }
 .reveal-cta{ text-align:center; margin:0 auto 1rem; max-width:420px; }
 
 /* ===========================================================
-   SYNTHWAVE WORLD — the neon environment the cabinet sits in.
-   One fixed layer behind all content: a perspective grid flying
-   toward the viewer, an Outrun sun on the horizon, a twinkling
-   starfield, and a glowing horizon line. Sits at z-index:-1 so it
-   paints above the flat body base but below every panel.
+   VECTOR-SPACE ATTRACT MODE — the environment the cabinet's screen
+   shows when idle. Coordinated, deliberately faint layers inspired by
+   early vector games and CRT attract screens: a sparse phosphor
+   starfield in the side gutters, one oversized cropped radar orb, a
+   thin phosphor horizon, and a minimal wireframe floor — over the
+   existing tinted-glass vignette, pixel grain and scanlines. One fixed
+   layer at z-index:-1: atmospheric as a whole, invisible while reading.
    =========================================================== */
-/* Tinted CRT glass over the whole viewport: a soft corner vignette, an
-   extremely light pixel grain, and near-invisible scanlines. This is the
-   restrained cabinet backdrop that replaced the old synthwave sun+grid —
-   it sets atmosphere without ever competing with content for attention.
-   The .synth-* child elements are kept in the page markup site-wide; each
-   now carries one quiet layer instead of the loud Outrun scene. */
 .synth-horizon{
   position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
-}
-/* faint dot-grain, like phosphor dust on the glass */
-.synth-stars{
-  position:absolute; inset:0;
-  background-image:radial-gradient(rgba(255,255,255,.5) .5px, transparent .5px);
+  /* whisper-faint phosphor grain baked at low alpha (no layer opacity,
+     so it never dims the storytelling layers stacked above it) */
+  background-image:radial-gradient(rgba(255,255,255,.03) .5px, transparent .6px);
   background-size:3px 3px;
-  opacity:.05;
 }
-/* corner vignette that pulls focus to the centre of the "screen" */
+/* tinted-glass vignette pulling focus to the centre of the screen */
+.synth-horizon::before{
+  content:""; position:absolute; inset:0;
+  background:radial-gradient(135% 120% at 50% 42%, transparent 52%, rgba(0,0,0,.55) 100%);
+}
+/* whisper-thin scanlines over everything — 3px pitch, barely there */
+.synth-horizon::after{
+  content:""; position:absolute; inset:0;
+  background:repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.14) 2px 3px);
+  mix-blend-mode:multiply; opacity:.5;
+}
+
+/* --- sparse phosphor starfield: warm white, cyan, magenta, rare amber,
+       concentrated in the gutters, the reading column kept quiet --- */
+.synth-stars{
+  position:absolute; inset:0; opacity:.6;
+  background-image:
+    radial-gradient(1.4px 1.4px at 4% 40%, rgba(251,243,228,.85), transparent),
+    radial-gradient(1px 1px at 6% 18%, rgba(251,243,228,.7), transparent),
+    radial-gradient(1px 1px at 12% 62%, rgba(251,243,228,.55), transparent),
+    radial-gradient(1px 1px at 15% 31%, rgba(251,243,228,.5), transparent),
+    radial-gradient(1px 1px at 9% 80%, rgba(51,236,230,.7), transparent),
+    radial-gradient(1px 1px at 3% 72%, rgba(255,61,154,.5), transparent),
+    radial-gradient(1.4px 1.4px at 96% 30%, rgba(51,236,230,.65), transparent),
+    radial-gradient(1px 1px at 97% 52%, rgba(251,243,228,.65), transparent),
+    radial-gradient(1px 1px at 94% 68%, rgba(255,61,154,.6), transparent),
+    radial-gradient(1.4px 1.4px at 88% 12%, rgba(255,61,154,.5), transparent),
+    radial-gradient(1px 1px at 84% 82%, rgba(51,236,230,.45), transparent),
+    radial-gradient(1px 1px at 92% 90%, rgba(255,197,49,.5), transparent);
+  -webkit-mask:linear-gradient(90deg, #000 0 20%, transparent 34% 66%, #000 80% 100%);
+  mask:linear-gradient(90deg, #000 0 20%, transparent 34% 66%, #000 80% 100%);
+  animation:star-twinkle 6s ease-in-out infinite alternate;
+}
+@keyframes star-twinkle{ from{ opacity:.44 } to{ opacity:.62 } }
+/* a couple of tiny vector "+" ticks out in the gutters */
+.synth-stars::after{
+  content:""; position:absolute; inset:0; opacity:.5;
+  background:
+    linear-gradient(rgba(51,236,230,.6),rgba(51,236,230,.6)) 90% 22%/5px 1px no-repeat,
+    linear-gradient(rgba(51,236,230,.6),rgba(51,236,230,.6)) 90% 22%/1px 5px no-repeat,
+    linear-gradient(rgba(255,61,154,.5),rgba(255,61,154,.5)) 8% 55%/5px 1px no-repeat,
+    linear-gradient(rgba(255,61,154,.5),rgba(255,61,154,.5)) 8% 55%/1px 5px no-repeat;
+}
+
+/* --- oversized, cropped vector radar orb in the right gutter: broken
+       concentric rings with a couple of latitude arcs, amber→magenta,
+       ~6% opacity so it reads as an old vector display, not a sun --- */
 .synth-sun{
-  position:absolute; inset:0;
-  background:radial-gradient(130% 120% at 50% 42%, transparent 55%, rgba(0,0,0,.55) 100%);
+  position:absolute; top:5%; right:-16%;
+  width:min(760px, 62vw); aspect-ratio:1; border-radius:50%; opacity:.06;
+  background:
+    radial-gradient(circle, transparent 29.6%, rgba(255,197,49,.95) 30% 30.5%, transparent 31%),
+    radial-gradient(circle, transparent 44.6%, rgba(255,138,120,.9) 45% 45.5%, transparent 46%),
+    radial-gradient(circle, transparent 61.6%, rgba(255,61,154,.9) 62% 62.5%, transparent 63%),
+    radial-gradient(circle, transparent 78.6%, rgba(255,61,154,.8) 79% 79.5%, transparent 80%);
+  -webkit-mask:conic-gradient(from 20deg, #000 0 32deg, transparent 32deg 56deg, #000 56deg 122deg, transparent 122deg 150deg, #000 150deg 252deg, transparent 252deg 286deg, #000 286deg 360deg);
+  mask:conic-gradient(from 20deg, #000 0 32deg, transparent 32deg 56deg, #000 56deg 122deg, transparent 122deg 150deg, #000 150deg 252deg, transparent 252deg 286deg, #000 286deg 360deg);
 }
-/* a single quiet horizon glow low on the screen, cabinet-purple lit */
+.synth-sun::before{
+  content:""; position:absolute; inset:0; border-radius:50%;
+  background:
+    linear-gradient(rgba(255,138,120,.6),rgba(255,138,120,.6)) 50% 38%/100% 1px no-repeat,
+    linear-gradient(rgba(255,61,154,.5),rgba(255,61,154,.5)) 50% 62%/100% 1px no-repeat;
+  -webkit-mask:radial-gradient(circle, #000 79%, transparent 80%);
+  mask:radial-gradient(circle, #000 79%, transparent 80%);
+}
+
+/* --- phosphor horizon: one thin cyan→magenta line near the hero /
+       leaderboard transition, soft low glow, faded at both ends --- */
 .synth-glow{
-  position:absolute; left:-10%; right:-10%; bottom:-14%; height:46%;
-  background:radial-gradient(60% 100% at 50% 100%, rgba(83,44,130,.42), transparent 72%);
+  position:absolute; left:6%; right:6%; top:52%; height:1px; opacity:.6;
+  background:linear-gradient(90deg, transparent, rgba(51,236,230,.5) 32%, rgba(255,61,154,.45) 68%, transparent);
+  box-shadow:0 0 12px 1px rgba(51,236,230,.13), 0 0 22px 4px rgba(255,61,154,.07);
+  -webkit-mask:linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  mask:linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
 }
-/* whisper-thin scanlines — 3px pitch, barely there, never over text */
+
+/* --- minimal wireframe floor: only the lowest ~15%, extremely thin
+       cyan/purple lines in perspective, faded out well before content --- */
 .synth-grid{
-  position:absolute; inset:0;
-  background:repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.22) 2px 3px);
-  opacity:.35;
-  mix-blend-mode:multiply;
+  position:absolute; left:-30%; right:-30%; bottom:0; height:15%; opacity:.1;
+  background-image:
+    linear-gradient(to right, rgba(51,236,230,.5) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(150,96,206,.5) 1px, transparent 1px);
+  background-size:5% 26px, 5% 26px;
+  transform:perspective(300px) rotateX(72deg);
+  transform-origin:bottom center;
+  -webkit-mask-image:linear-gradient(to bottom, transparent, #000 88%);
+  mask-image:linear-gradient(to bottom, transparent, #000 88%);
+}
+
+/* --- bezel + attract-mode responsiveness --- */
+@media (max-width: 1024px){
+  .crt-bezel{ --bezel:6px; border-radius:14px; }
+  .crt-bezel::after{ display:none; }         /* fasteners: larger screens only */
+  .synth-sun{ width:min(560px, 68vw); opacity:.05; }
+}
+@media (max-width: 560px){
+  .crt-bezel{ --bezel:4px; border-radius:11px; }
+  .synth-stars{ opacity:.42; }               /* simpler, quieter starfield */
+  .synth-stars::after{ display:none; }
+  .synth-sun{ display:none; }                /* orb would crowd the hero */
+  .synth-grid{ height:10%; opacity:.07; }    /* just a few lower-edge lines */
 }
 
 /* ===========================================================
@@ -1470,6 +1607,10 @@ body.page-present{ padding-bottom:9.5rem; }
 
 /* ================= confetti overlay ================= */
 #confetti{ position:fixed; inset:0; pointer-events:none; z-index:12; }
+/* On the leaderboard the champion burst renders *behind* all functional
+   content (above the starfield, below every panel/name/score) so it can
+   never obscure information. The Present screen keeps it above content. */
+body.page-board #confetti{ z-index:-1; }
 
 /* ================= live reactions ================= */
 /* Play: a row of tappable emoji that broadcast to the shared screen. */

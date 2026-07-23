@@ -195,7 +195,8 @@ async function showBoard(session) {
   // judged on total points, regardless of which view the toggle shows.
   const totalRanked = sortRows(rows, "total_points");
   if (meRow && totalRanked[0] && totalRanked[0].display_name === meRow.display_name) {
-    fireConfetti($("confetti"));
+    // a short, contained reward in the hero — rendered behind content
+    fireConfetti($("confetti"), { count: 70, frames: 200, heroBand: 0.62 });
   }
 
   // Identity: nav visibility and suggestion ownership need my id.
