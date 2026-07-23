@@ -1634,12 +1634,106 @@ body.page-present{ padding-bottom:9.5rem; }
   .plinth .sub{ display:none; }
 }
 
+/* ================= arcade boot sequence =================
+   Landing on the leaderboard powers the cabinet on like it's been off
+   for decades: the tube strikes to a bright line, warms up with a
+   flicker and a rolling hold-bar, prints a short self-test, then
+   flashes white and fades to reveal the finished board. Opaque from
+   first paint so the page assembles unseen; JS (startBoot) drives the
+   reveal, with a CSS failsafe that lifts it even if the script never
+   runs. Reduced motion removes it entirely. */
+.boot{
+  position:fixed; inset:0; z-index:100;
+  background:#05030B;
+  display:grid; place-items:center; overflow:hidden;
+  animation:boot-failsafe 8s linear forwards;   /* safety net if JS never reveals */
+}
+.boot[hidden]{ display:none; }
+
+/* static scanlines over the whole tube */
+.boot::before{
+  content:""; position:absolute; inset:0; z-index:4; pointer-events:none;
+  background:repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.32) 2px 3px);
+}
+/* corner vignette, so the light falls off like curved glass */
+.boot::after{
+  content:""; position:absolute; inset:0; z-index:4; pointer-events:none;
+  background:radial-gradient(125% 105% at 50% 50%, transparent 52%, rgba(0,0,0,.75));
+}
+
+/* the phosphor screen — everything warms up inside it */
+.boot-screen{
+  position:relative; z-index:2;
+  width:min(560px, 82vw); padding:0 1rem;
+  color:var(--cyan);
+  font:700 clamp(.6rem,2.5vw,.82rem)/1.95 var(--font-mono);
+  text-shadow:0 0 8px rgba(51,236,230,.55);
+  transform-origin:center center; opacity:0;
+}
+.boot.is-booting .boot-screen{
+  animation:boot-strike .55s ease-out both, boot-flicker 2.4s steps(1,end) .55s both;
+}
+
+/* the classic CRT strike: a thin bright line snaps open to full height */
+@keyframes boot-strike{
+  0%  { opacity:0; transform:scaleY(.02); filter:brightness(3.2); }
+  30% { opacity:1; transform:scaleY(.02); filter:brightness(3.2); }
+  55% { opacity:1; transform:scaleY(1);   filter:brightness(2); }
+  100%{ opacity:1; transform:scaleY(1);   filter:brightness(1); }
+}
+/* tubes settling: irregular brightness dips with a couple of hard dropouts */
+@keyframes boot-flicker{
+  0%,100%{ opacity:1 }
+  4%{ opacity:.5 } 5%{ opacity:1 }
+  16%{ opacity:.82 } 17%{ opacity:1 }
+  22%{ opacity:.32 } 23%{ opacity:1 }     /* deep dropout */
+  45%{ opacity:.9 } 46%{ opacity:1 }
+  60%{ opacity:.55 } 61%{ opacity:1 }     /* second dropout */
+  79%{ opacity:.86 } 80%{ opacity:1 }
+}
+
+/* a bright hold-bar rolling down the screen (mistuned vertical hold) */
+.boot-roll{
+  position:absolute; left:0; right:0; top:0; height:26%; z-index:3; pointer-events:none;
+  background:linear-gradient(180deg, transparent,
+    rgba(120,255,250,.05) 44%, rgba(190,255,252,.12) 50%, rgba(120,255,250,.05) 56%, transparent);
+}
+.boot.is-booting .boot-roll{ animation:boot-roll 2.7s linear infinite; }
+@keyframes boot-roll{ 0%{ transform:translateY(-140%);} 100%{ transform:translateY(520%);} }
+
+/* the self-test read-out, printed one line at a time */
+.boot-log{ margin:0; white-space:pre-wrap; }
+.boot-log b{ color:var(--gold); text-shadow:0 0 9px rgba(255,197,49,.55); }
+.boot-log .ok{ color:#7CF6B0; text-shadow:0 0 9px rgba(124,246,176,.55); }
+.boot-log .ln{ display:block; opacity:0; }
+.boot.is-booting .boot-log .ln{ animation:boot-line .18s ease-out both; }
+.boot.is-booting .boot-log .ln:nth-child(1){ animation-delay:.65s; }
+.boot.is-booting .boot-log .ln:nth-child(2){ animation-delay:.85s; }
+.boot.is-booting .boot-log .ln:nth-child(3){ animation-delay:1s;   }
+.boot.is-booting .boot-log .ln:nth-child(4){ animation-delay:1.2s; }
+.boot.is-booting .boot-log .ln:nth-child(5){ animation-delay:1.5s; }
+.boot.is-booting .boot-log .ln:nth-child(6){ animation-delay:1.8s; }
+.boot.is-booting .boot-log .ln:nth-child(7){ animation-delay:2.1s; }
+@keyframes boot-line{ from{ opacity:0; transform:translateY(2px); } to{ opacity:1; transform:none; } }
+.boot-cursor{ animation:boot-blink 1s steps(1,end) infinite; }
+@keyframes boot-blink{ 0%,50%{ opacity:1 } 51%,100%{ opacity:0 } }
+
+/* the reveal: the tube surges to a full white flash while the overlay
+   is still opaque, then the whole thing fades to show the finished board */
+.boot-flash{ position:absolute; inset:0; z-index:5; background:#EAF7FF; opacity:0; pointer-events:none; }
+.boot.is-done{ animation:boot-out .6s ease-out both; }
+.boot.is-done .boot-flash{ animation:boot-flash .6s ease-out both; }
+@keyframes boot-flash{ 0%{ opacity:0 } 12%{ opacity:1 } 24%{ opacity:1 } 55%{ opacity:0 } 100%{ opacity:0 } }
+@keyframes boot-out{ 0%,32%{ opacity:1 } 100%{ opacity:0 } }
+
+/* failsafe: hold opaque, then lift near the end if JS never reveals */
+@keyframes boot-failsafe{ 0%,93%{ opacity:1; visibility:visible } 100%{ opacity:0; visibility:hidden } }
+
+/* the simple full-page power flash is superseded here by the full boot */
+body.page-board::after{ display:none; }
+
 /* ================= confetti overlay ================= */
 #confetti{ position:fixed; inset:0; pointer-events:none; z-index:12; }
-/* On the leaderboard the champion burst renders *behind* all functional
-   content (above the starfield, below every panel/name/score) so it can
-   never obscure information. The Present screen keeps it above content. */
-body.page-board #confetti{ z-index:-1; }
 
 /* ================= live reactions ================= */
 /* Play: a row of tappable emoji that broadcast to the shared screen. */
@@ -1689,4 +1783,7 @@ body.page-board #confetti{ z-index:-1; }
      finished state (a still grid, steady glow, steady prompt). */
   body::after{ display:none !important; }
   .sunburst, .shockwave{ display:none !important; }
+  /* the boot power-on is pure animation — with motion off it would sit
+     as a solid screen over the page, so drop it and show the board. */
+  .boot{ display:none !important; }
 }

@@ -1,6 +1,6 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/+esm";
 import { SUPABASE_URL, SUPABASE_ANON_KEY, LOGIN_DOMAIN } from "./config.js";
-import { fireConfetti, countUp } from "./fx.js";
+import { startBoot, countUp } from "./fx.js";
 import { fetchSeason, badgeChips, streakChip, renderSeasonRail, renderSpoon } from "./season.js";
 import { rivalryLine, headToHead } from "./needle.js";
 import { loadMe, clearMe, setupNav } from "./auth.js";
@@ -30,11 +30,15 @@ let boardSortBy = "total"; // "total" | "average"
 boot();
 
 async function boot() {
+  // The cabinet is powering on (the #boot overlay is opaque from first
+  // paint); keep it up until whichever view we land on is ready.
+  const booting = startBoot($("boot"));
   const { data: { session } } = await db.auth.getSession();
-  if (session) return showBoard(session);
+  if (session) return showBoard(session, booting);
   await loadRoster();
   show("view-auth");
   $("tagline").textContent = "Sign in to see where you sit.";
+  booting.reveal();
 }
 
 // The shape season.js hands back, used to render the standings
@@ -146,7 +150,10 @@ $("sign-out").addEventListener("click", async () => {
 /* ============================================================
    LEADERBOARD
    ============================================================ */
-async function showBoard(session) {
+async function showBoard(session, booting) {
+  // Called both from boot() (handle passed in) and after a fresh sign-in
+  // (start our own power-on for the board coming up).
+  booting = booting || startBoot($("boot"));
   show("view-board");
   // The single "Season standings" title lives on the podium stage; the
   // masthead tagline just carries flavour so the label isn't duplicated.
@@ -177,6 +184,7 @@ async function showBoard(session) {
   const { data: rows, error } = await standingsReq;
   if (error) {
     $("rankings").innerHTML = `<li class="name">Scoreboard is not loading. Check the database setup.</li>`;
+    booting.reveal(); // never leave the machine warming up on a dead board
     return;
   }
 
@@ -190,14 +198,6 @@ async function showBoard(session) {
   // Paint the standings straight away, before the season RPCs land -
   // badge chips fill in a moment later once the season data arrives.
   renderBoard();
-
-  // Champion status (and the confetti that comes with it) is always
-  // judged on total points, regardless of which view the toggle shows.
-  const totalRanked = sortRows(rows, "total_points");
-  if (meRow && totalRanked[0] && totalRanked[0].display_name === meRow.display_name) {
-    // a short, contained reward in the hero — rendered behind content
-    fireConfetti($("confetti"), { count: 70, frames: 200, heroBand: 0.62 });
-  }
 
   // Identity: nav visibility and suggestion ownership need my id.
   if (user) {
@@ -219,6 +219,10 @@ async function showBoard(session) {
   boardSeason = season;
   renderBoard();
   renderSeasonRail(db, season);
+
+  // The board is fully assembled — power the cabinet on so it lands
+  // complete rather than building up in front of the player.
+  booting.reveal();
 }
 
 /* The player HUD read-out: identity, live rank and quiz credits, all

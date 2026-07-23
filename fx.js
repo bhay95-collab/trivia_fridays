@@ -114,6 +114,58 @@ export function streakShock() {
 }
 
 /* ============================================================
+   Arcade boot sequence. Landing on the leaderboard powers the
+   cabinet on like it's been switched off for decades: the tube
+   strikes to a bright line, warms up with a flicker, runs a short
+   self-test, then flashes white and fades to reveal the fully
+   rendered board behind it. The overlay is opaque from first paint
+   so the page assembles unseen, and this only drives the timing.
+
+     overlay — the #boot element
+     minMs   — hold the sequence at least this long before revealing,
+               so a fast load still gets the full power-on
+     capMs   — reveal no matter what by here, so a slow/failed load
+               can never trap the page behind the overlay
+
+   Returns a handle whose reveal() lifts the overlay once the board
+   is ready. Under reduced motion it removes the overlay immediately
+   and does nothing else — motion OFF, page shown straight away.
+   ============================================================ */
+export function startBoot(overlay, { minMs = 2600, capMs = 6500 } = {}) {
+  if (!overlay) return { reveal() {} };
+  if (reducedMotion()) { overlay.hidden = true; return { reveal() {} }; }
+
+  overlay.hidden = false;
+  // restart cleanly if a previous boot (e.g. the sign-in screen) ran
+  overlay.classList.remove("is-done");
+  void overlay.offsetWidth;
+  overlay.classList.add("is-booting");
+
+  const started = performance.now();
+  let done = false;
+
+  const finish = () => {
+    if (done) return;
+    done = true;
+    clearTimeout(cap);
+    overlay.classList.remove("is-booting");
+    overlay.classList.add("is-done"); // the white flash + fade-out
+    setTimeout(() => {
+      overlay.hidden = true;
+      overlay.classList.remove("is-done");
+    }, 640); // must outlast boot-out
+  };
+
+  const cap = setTimeout(finish, capMs);
+
+  return {
+    reveal() {
+      setTimeout(finish, Math.max(0, minMs - (performance.now() - started)));
+    },
+  };
+}
+
+/* ============================================================
    Confetti. Canvas-based, fixed duration, cleans up after
    itself. Skipped entirely under reduced motion.
    ============================================================ */
