@@ -1662,10 +1662,14 @@ body.page-present{ padding-bottom:9.5rem; }
 }
 
 /* the phosphor screen — everything warms up inside it. Large, wide type
-   so the short read-out still fills most of the tube. */
+   so the short read-out still fills most of the tube. The box shrink-wraps
+   its widest line (capped at 94vw so it never overflows a narrow tube), so
+   the block centres as a unit under the logo while its lines stay flush
+   left — that's what lets the monogram sit truly centred over the text
+   rather than over a mostly-empty wide column. */
 .boot-screen{
   position:relative; z-index:2;
-  width:min(1040px, 94vw); padding:0 1rem;
+  width:fit-content; max-width:min(1040px, 94vw); padding:0 1rem;
   color:var(--cyan);
   font:700 clamp(.9rem,3.1vw,1.7rem)/2.15 var(--font-mono);
   text-shadow:0 0 10px rgba(51,236,230,.6);
@@ -1673,6 +1677,86 @@ body.page-present{ padding-bottom:9.5rem; }
 }
 .boot.is-booting .boot-screen{
   animation:boot-strike .55s ease-out both, boot-flicker 2.4s steps(1,end) .55s both;
+}
+
+/* the monogram sits centred above the self-test block. The stack is the
+   single centred child of the overlay and shrink-wraps to the read-out,
+   so the logo lands truly centred over the text column while the message
+   lines stay flush left within it. Gap holds ~20-28px of breathing room
+   between the logo and the first text line. */
+.boot-stack{
+  position:relative; z-index:2;
+  display:flex; flex-direction:column; align-items:center;
+  gap:clamp(13px, 1.7vh, 21px);
+  max-width:100%;
+}
+
+/* The logo is a real, high-res PNG scaled down, so it stays crisp. Its
+   resting look is the settled phosphor glow — a soft cyan bloom with a
+   faint magenta ghost — which is also exactly what a no-animation
+   (reduced-motion) render should show. Sizing shrinks the logo before the
+   text on narrow screens; explicit height keeps the 512x512 box reserved
+   so nothing shifts while it decodes. */
+.boot-logo{
+  display:block;
+  width:clamp(96px, 12vw, 165px);
+  height:auto;
+  image-rendering:auto;
+  filter:
+    drop-shadow(0 0 7px rgba(36, 238, 242, 0.30))
+    drop-shadow(0 0 12px rgba(255, 25, 137, 0.12));
+  will-change:opacity, filter, clip-path;
+}
+/* Desktop: ~150-165px. */
+@media (min-width:1200px){
+  .boot-logo{ width:clamp(150px, 10vw, 165px); }
+}
+/* Tablet: ~120-140px. */
+@media (min-width:600px) and (max-width:1199px){
+  .boot-logo{ width:clamp(120px, 15vw, 140px); }
+}
+/* Mobile: ~90-110px, and never closer than 16px to the bezel. */
+@media (max-width:599px){
+  .boot-logo{ width:clamp(90px, 26vw, 110px); }
+}
+
+/* the logo's own restrained CRT power-on, layered over the screen strike:
+   a quick vertical scan reveal, two or three short phosphor flickers, a
+   settle to full cyan brightness with a single amber-tinted pulse standing
+   in for the status light, then dead steady. Finishes inside ~650ms so it
+   never holds up the self-test that keeps printing underneath. No shake,
+   rotate, bounce or continuous pulse. */
+.boot.is-booting .boot-logo{
+  animation:boot-logo-on .65s linear both;
+}
+@keyframes boot-logo-on{
+  /* 1. faint appearance, revealed top-to-bottom by a scan line */
+  0%   { opacity:0; clip-path:inset(0 0 100% 0);
+         filter:brightness(2.4) drop-shadow(0 0 3px rgba(36,238,242,.25)); }
+  16%  { opacity:.85; clip-path:inset(0 0 0 0);
+         filter:brightness(1.7) drop-shadow(0 0 4px rgba(36,238,242,.28)); }
+  /* 2. two or three very short phosphor flickers */
+  24%  { opacity:.34; }
+  31%  { opacity:.96; }
+  41%  { opacity:.52; }
+  49%  { opacity:1; }
+  58%  { opacity:.74; }
+  /* 3. cyan illumination settles to full; 4. amber status light pulses once */
+  66%  { opacity:1;
+         filter:brightness(1.18)
+           drop-shadow(0 0 9px rgba(36,238,242,.34))
+           drop-shadow(0 0 12px rgba(255,25,137,.14))
+           drop-shadow(0 0 10px rgba(255,176,38,.45)); }
+  82%  { opacity:1;
+         filter:brightness(1.03)
+           drop-shadow(0 0 7px rgba(36,238,242,.31))
+           drop-shadow(0 0 12px rgba(255,25,137,.12))
+           drop-shadow(0 0 5px rgba(255,176,38,.14)); }
+  /* 5. dead steady at the settled treatment */
+  100% { opacity:1; clip-path:inset(0 0 0 0);
+         filter:
+           drop-shadow(0 0 7px rgba(36,238,242,.30))
+           drop-shadow(0 0 12px rgba(255,25,137,.12)); }
 }
 
 /* the classic CRT strike: a thin bright line snaps open to full height */
