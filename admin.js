@@ -264,9 +264,11 @@ $("weeks-rows").addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-action='delete-week']");
   if (!btn) return;
 
-  const isClosed = btn.dataset.status === "closed";
-  const message = isClosed
+  const status = btn.dataset.status;
+  const message = status === "closed"
     ? `Delete the ${btn.dataset.date} quiz? It's already closed - this permanently wipes its questions, answers, and everyone's scores for that night. Other quizzes' scores and streaks are unaffected.`
+    : status === "live"
+    ? `Delete the ${btn.dataset.date} quiz? It's LIVE right now - players are actively answering questions. Deleting it will immediately kick everyone out mid-quiz and wipe every answer submitted so far. This can't be undone.`
     : `Delete the ${btn.dataset.date} quiz? This can't be undone.`;
   if (!confirm(message)) return;
 
