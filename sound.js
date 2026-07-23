@@ -147,6 +147,72 @@ export const sfx = {
 };
 
 /* ============================================================
+   BACKGROUND MUSIC — one looping chiptune bed, mixed low so the
+   SFX above always cut through. Deliberately the last thing the
+   site ever loads: the file is never referenced in markup and is
+   only fetched, at low priority, once sound is switched on. A
+   first-time visitor who never enables sound downloads none of it.
+   ============================================================ */
+const MUSIC_URL = "audio/theme.mp3";
+const MUSIC_LEVEL = 0.22;              // sits under the 0.4 master so SFX pop
+
+let musicGain = null;
+let musicSrc = null;                   // the currently-playing loop, or null
+let musicBuf = null;                   // decoded once, then reused
+let musicLoading = false;
+
+async function loadMusic() {
+  if (musicBuf || musicLoading) return musicBuf;
+  musicLoading = true;
+  try {
+    const res = await fetch(MUSIC_URL, { priority: "low" });
+    musicBuf = await ctx.decodeAudioData(await res.arrayBuffer());
+  } catch {
+    musicBuf = null;                   // music is a nicety — never a blocker
+  } finally {
+    musicLoading = false;
+  }
+  return musicBuf;
+}
+
+/* Start the loop. Needs sound on and a prior user gesture (ensure()
+   handles both). Safe to call repeatedly — it never stacks. */
+export async function startMusic() {
+  if (!ensure() || musicSrc) return;
+  const buf = await loadMusic();
+  // State can change during the decode, so re-check before we commit.
+  if (!buf || !soundOn() || musicSrc) return;
+  if (!musicGain) {
+    musicGain = ctx.createGain();
+    musicGain.gain.value = 0.0001;
+    musicGain.connect(master);
+  }
+  musicSrc = ctx.createBufferSource();
+  musicSrc.buffer = buf;
+  musicSrc.loop = true;                // gapless — the whole point of decoding it
+  musicSrc.connect(musicGain);
+  musicSrc.start();
+  musicGain.gain.setTargetAtTime(MUSIC_LEVEL, ctx.currentTime, 0.4);  // fade in
+}
+
+/* Stop the loop with a short fade so it never clicks off. */
+export function stopMusic() {
+  if (!musicSrc || !ctx) return;
+  const src = musicSrc;
+  musicSrc = null;
+  musicGain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.25);      // fade out
+  try { src.stop(ctx.currentTime + 1.2); } catch {}
+}
+
+/* Pause the whole audio clock when the tab is hidden so the loop
+   doesn't play to an empty room; resume seamlessly on return. */
+document.addEventListener("visibilitychange", () => {
+  if (!ctx) return;
+  if (document.hidden) ctx.suspend();
+  else if (soundOn()) ctx.resume();
+});
+
+/* ============================================================
    THE TOGGLE — present in every page header.
    ============================================================ */
 function paintToggle(btn) {
@@ -163,6 +229,24 @@ if (toggleBtn) {
   toggleBtn.addEventListener("click", () => {
     localStorage.setItem(STORE_KEY, soundOn() ? "off" : "on");
     paintToggle(toggleBtn);
-    if (soundOn()) sfx.chime(); // the click is the unlock gesture; confirm audibly
+    if (soundOn()) {
+      sfx.chime();    // the click is the unlock gesture; confirm audibly
+      startMusic();
+    } else {
+      stopMusic();
+    }
   });
+}
+
+/* Returning visitor who already has sound on: browsers forbid audio
+   until a gesture, so we can't start on load. Kick the music off on
+   their first interaction, then stop listening. */
+if (soundOn()) {
+  const kick = () => {
+    startMusic();
+    window.removeEventListener("pointerdown", kick);
+    window.removeEventListener("keydown", kick);
+  };
+  window.addEventListener("pointerdown", kick);
+  window.addEventListener("keydown", kick);
 }
